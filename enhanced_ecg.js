@@ -1,500 +1,480 @@
-// 高品質心電図アニメーション
-class ECGAnimator {
-    constructor() {
-        this.isAnimating = false;
-        this.animationSpeed = 1000;
-        this.currentPhase = 0;
-        this.setupRealTimeECG();
+// 包括的な心電図アニメーションシステム
+
+// SVGグリッドパターンを動的に追加
+function addGridPattern(svg) {
+    // 既存のdefsを確認、なければ作成
+    let defs = svg.querySelector('defs');
+    if (!defs) {
+        defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        svg.insertBefore(defs, svg.firstChild);
     }
 
-    // リアルタイム心電図の設定
-    setupRealTimeECG() {
-        const containers = document.querySelectorAll('.wave-container');
-        containers.forEach((container, index) => {
-            if (!container.querySelector('.real-time-ecg')) {
-                this.createRealTimeECG(container, index);
-            }
-        });
+    // グリッドパターンを追加
+    const gridPattern = `
+        <pattern id="grid-${Math.random().toString(36).substr(2, 9)}" width="5" height="5" patternUnits="userSpaceOnUse">
+            <path d="M 5 0 L 0 0 0 5" fill="none" stroke="#e5e7eb" stroke-width="0.5"/>
+        </pattern>
+        <pattern id="grid-major-${Math.random().toString(36).substr(2, 9)}" width="25" height="25" patternUnits="userSpaceOnUse">
+            <path d="M 25 0 L 0 0 0 25" fill="none" stroke="#d1d5db" stroke-width="1"/>
+        </pattern>
+    `;
+    defs.innerHTML += gridPattern;
+}
+
+// 基本心電図アニメーター
+class BasicECGAnimator {
+    constructor(svgElement, waveformType = 'normal') {
+        this.svg = svgElement;
+        this.waveformType = waveformType;
+        this.animationId = null;
+        this.isRunning = false;
+        this.width = 500;
+        this.height = parseInt(svgElement.getAttribute('height')) || 100;
+        this.centerY = this.height / 2;
+        this.currentX = 20;
+        this.speed = 2;
+        this.scale = 1;
+        
+        this.setupSVG();
+        this.waveforms = this.getWaveformData();
     }
 
-    // リアルタイム心電図の作成
-    createRealTimeECG(container, waveType = 0) {
-        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.setAttribute('width', '100%');
-        svg.setAttribute('height', '120');
-        svg.setAttribute('viewBox', '0 0 800 120');
-        svg.classList.add('real-time-ecg');
+    setupSVG() {
+        // グリッドパターンを追加
+        addGridPattern(this.svg);
         
-        // グリッド背景
-        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-        const pattern = document.createElementNS('http://www.w3.org/2000/svg', 'pattern');
-        pattern.setAttribute('id', `grid-${waveType}`);
-        pattern.setAttribute('width', '20');
-        pattern.setAttribute('height', '20');
-        pattern.setAttribute('patternUnits', 'userSpaceOnUse');
-        
-        const rect1 = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        rect1.setAttribute('width', '20');
-        rect1.setAttribute('height', '20');
-        rect1.setAttribute('fill', 'none');
-        rect1.setAttribute('stroke', '#ffcccb');
-        rect1.setAttribute('stroke-width', '0.5');
-        
-        const rect2 = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        rect2.setAttribute('width', '100');
-        rect2.setAttribute('height', '100');
-        rect2.setAttribute('fill', 'none');
-        rect2.setAttribute('stroke', '#ff6b6b');
-        rect2.setAttribute('stroke-width', '1');
-        
-        pattern.appendChild(rect1);
-        pattern.appendChild(rect2);
-        defs.appendChild(pattern);
-        svg.appendChild(defs);
-        
-        // 背景
-        const background = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        background.setAttribute('width', '100%');
-        background.setAttribute('height', '100%');
-        background.setAttribute('fill', `url(#grid-${waveType})`);
-        svg.appendChild(background);
-        
-        // 心電図線
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('fill', 'none');
-        path.setAttribute('stroke', waveType % 2 === 0 ? '#10b981' : '#ef4444');
-        path.setAttribute('stroke-width', '2.5');
-        path.setAttribute('stroke-linejoin', 'round');
-        path.setAttribute('stroke-linecap', 'round');
-        path.classList.add('ecg-path');
-        svg.appendChild(path);
-        
-        // パラメータ表示
-        const paramGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        paramGroup.classList.add('ecg-parameters');
-        
-        const hrText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        hrText.setAttribute('x', '10');
-        hrText.setAttribute('y', '20');
-        hrText.setAttribute('fill', '#4a5568');
-        hrText.setAttribute('font-size', '12');
-        hrText.setAttribute('font-weight', 'bold');
-        hrText.textContent = 'HR: 72 bpm';
-        
-        const rhythmText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        rhythmText.setAttribute('x', '10');
-        rhythmText.setAttribute('y', '35');
-        rhythmText.setAttribute('fill', '#4a5568');
-        rhythmText.setAttribute('font-size', '12');
-        rhythmText.textContent = 'Rhythm: Sinus';
-        
-        paramGroup.appendChild(hrText);
-        paramGroup.appendChild(rhythmText);
-        svg.appendChild(paramGroup);
-        
-        // 既存のSVGを置き換え
-        const existingSvg = container.querySelector('svg');
-        if (existingSvg) {
-            container.replaceChild(svg, existingSvg);
-        } else {
-            container.appendChild(svg);
-        }
-        
-        this.animateWave(path, waveType);
+        // 背景矩形を追加
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('width', '100%');
+        rect.setAttribute('height', '100%');
+        rect.setAttribute('fill', '#fefefe');
+        rect.setAttribute('stroke', '#e5e7eb');
+        rect.setAttribute('stroke-width', '1');
+        this.svg.appendChild(rect);
     }
 
-    // 波形データ生成
-    generateWaveData(type, length = 800) {
-        const data = [];
-        const baselineY = 60;
-        let x = 0;
-        
-        while (x < length) {
-            if (type === 0) {
-                // 正常洞調律
-                data.push(...this.generateNormalBeat(x, baselineY));
-                x += 160;
-            } else if (type === 1) {
-                // 心房細動
-                data.push(...this.generateAFibBeat(x, baselineY));
-                x += Math.random() * 40 + 120;
-            } else if (type === 2) {
-                // 心室頻拍
-                data.push(...this.generateVTBeat(x, baselineY));
-                x += 80;
-            } else {
-                // その他の不整脈
-                data.push(...this.generateAbnormalBeat(x, baselineY));
-                x += 140;
-            }
-        }
-        
-        return data;
-    }
-
-    // 正常な心拍生成
-    generateNormalBeat(startX, baselineY) {
-        const beat = [];
-        
-        // P波
-        beat.push([startX, baselineY]);
-        beat.push([startX + 10, baselineY - 3]);
-        beat.push([startX + 20, baselineY]);
-        beat.push([startX + 40, baselineY]);
-        
-        // QRS複合波
-        beat.push([startX + 50, baselineY + 2]);  // Q波
-        beat.push([startX + 55, baselineY - 25]); // R波
-        beat.push([startX + 65, baselineY + 8]);  // S波
-        beat.push([startX + 75, baselineY]);
-        
-        // T波
-        beat.push([startX + 100, baselineY]);
-        beat.push([startX + 115, baselineY - 8]);
-        beat.push([startX + 130, baselineY]);
-        beat.push([startX + 160, baselineY]);
-        
-        return beat;
-    }
-
-    // 心房細動波形生成
-    generateAFibBeat(startX, baselineY) {
-        const beat = [];
-        let x = startX;
-        
-        // 不規則なf波
-        while (x < startX + 40) {
-            beat.push([x, baselineY + (Math.random() - 0.5) * 4]);
-            x += 3;
-        }
-        
-        // 不規則なQRS
-        beat.push([startX + 45, baselineY + 2]);
-        beat.push([startX + 50, baselineY - 20 + Math.random() * 5]);
-        beat.push([startX + 60, baselineY + 6]);
-        beat.push([startX + 70, baselineY]);
-        
-        // T波
-        beat.push([startX + 90, baselineY - 5 + Math.random() * 3]);
-        beat.push([startX + 110, baselineY]);
-        
-        return beat;
-    }
-
-    // 心室頻拍波形生成
-    generateVTBeat(startX, baselineY) {
-        const beat = [];
-        
-        // 幅広いQRS
-        beat.push([startX, baselineY]);
-        beat.push([startX + 5, baselineY + 3]);
-        beat.push([startX + 15, baselineY - 20]);
-        beat.push([startX + 25, baselineY + 15]);
-        beat.push([startX + 35, baselineY - 10]);
-        beat.push([startX + 45, baselineY + 8]);
-        beat.push([startX + 55, baselineY]);
-        beat.push([startX + 80, baselineY]);
-        
-        return beat;
-    }
-
-    // その他の異常波形生成
-    generateAbnormalBeat(startX, baselineY) {
-        const beat = [];
-        
-        // 変形したP波
-        beat.push([startX, baselineY]);
-        beat.push([startX + 15, baselineY - 5]);
-        beat.push([startX + 25, baselineY]);
-        beat.push([startX + 40, baselineY]);
-        
-        // 異常QRS
-        beat.push([startX + 50, baselineY + 3]);
-        beat.push([startX + 60, baselineY - 22]);
-        beat.push([startX + 70, baselineY + 10]);
-        beat.push([startX + 80, baselineY]);
-        
-        // 異常T波
-        beat.push([startX + 100, baselineY]);
-        beat.push([startX + 120, baselineY + 8]);
-        beat.push([startX + 140, baselineY]);
-        
-        return beat;
-    }
-
-    // 波形アニメーション
-    animateWave(path, type) {
-        const waveData = this.generateWaveData(type);
-        let currentIndex = 0;
-        
-        const animate = () => {
-            if (currentIndex < waveData.length) {
-                const currentData = waveData.slice(0, currentIndex + 1);
-                const pathString = this.createPathString(currentData);
-                path.setAttribute('d', pathString);
-                
-                currentIndex += 2;
-                setTimeout(() => requestAnimationFrame(animate), 50);
-            } else {
-                // アニメーション完了後、再開始
-                setTimeout(() => {
-                    currentIndex = 0;
-                    animate();
-                }, 5000);
+    getWaveformData() {
+        const patterns = {
+            normal: {
+                p: { amplitude: 15, width: 40, position: 0 },
+                qrs: { amplitude: 50, width: 30, position: 80 },
+                t: { amplitude: 20, width: 60, position: 160 },
+                interval: 250,
+                heartRate: 75
+            },
+            pac: {
+                p: { amplitude: 20, width: 35, position: 0, abnormal: true },
+                qrs: { amplitude: 45, width: 25, position: 60 },
+                t: { amplitude: 18, width: 55, position: 130 },
+                interval: 200,
+                heartRate: 90
+            },
+            pvc: {
+                p: { amplitude: 0, width: 0, position: 0 },
+                qrs: { amplitude: 80, width: 80, position: 20, wide: true },
+                t: { amplitude: -30, width: 70, position: 120, inverted: true },
+                interval: 180,
+                heartRate: 110
+            },
+            af: {
+                fibrillation: true,
+                qrs: { amplitude: 45, width: 25 },
+                irregularRR: true,
+                intervals: [150, 200, 180, 220, 160]
+            },
+            vt: {
+                qrs: { amplitude: 70, width: 60, wide: true, rapid: true },
+                interval: 120,
+                heartRate: 200
+            },
+            stemi: {
+                p: { amplitude: 12, width: 40, position: 0 },
+                qrs: { amplitude: 45, width: 30, position: 80, qWave: true },
+                st: { elevation: 15, position: 110 },
+                t: { amplitude: 35, width: 60, position: 160, peaked: true },
+                interval: 280
+            },
+            nstemi: {
+                p: { amplitude: 12, width: 40, position: 0 },
+                qrs: { amplitude: 45, width: 30, position: 80 },
+                st: { depression: -8, position: 110 },
+                t: { amplitude: -25, width: 60, position: 160, inverted: true },
+                interval: 280
+            },
+            bradycardia: {
+                p: { amplitude: 15, width: 40, position: 0 },
+                qrs: { amplitude: 50, width: 30, position: 80 },
+                t: { amplitude: 20, width: 60, position: 160 },
+                interval: 400,
+                heartRate: 45
+            },
+            avblock: {
+                p: { amplitude: 15, width: 40, position: 0 },
+                pr: { prolonged: true, interval: 120 },
+                qrs: { amplitude: 50, width: 30, position: 120 },
+                t: { amplitude: 20, width: 60, position: 200 },
+                interval: 350
             }
         };
         
-        animate();
+        return patterns[this.waveformType] || patterns.normal;
     }
 
-    // パス文字列作成
-    createPathString(data) {
-        if (data.length === 0) return '';
+    drawWaveform(startX) {
+        const wave = this.waveforms;
+        let pathData = `M ${startX} ${this.centerY}`;
+        let currentX = startX;
+
+        if (wave.fibrillation) {
+            // 心房細動の不規則な波形
+            return this.drawAtrialFibrillation(startX);
+        }
+
+        // P波
+        if (wave.p && wave.p.amplitude > 0) {
+            pathData += this.drawPWave(currentX + wave.p.position, wave.p);
+        }
+
+        // PR間隔（延長がある場合）
+        if (wave.pr && wave.pr.prolonged) {
+            currentX += wave.pr.interval;
+            pathData += ` L ${currentX} ${this.centerY}`;
+        }
+
+        // QRS群
+        if (wave.qrs) {
+            const qrsX = currentX + (wave.qrs.position || 80);
+            pathData += this.drawQRS(qrsX, wave.qrs);
+            currentX = qrsX + wave.qrs.width;
+        }
+
+        // ST変化
+        if (wave.st) {
+            const stX = currentX + (wave.st.position || 20);
+            const stY = this.centerY + (wave.st.elevation || wave.st.depression || 0);
+            pathData += ` L ${stX} ${stY}`;
+            currentX = stX + 30;
+        }
+
+        // T波
+        if (wave.t) {
+            const tX = currentX + (wave.t.position || 20);
+            pathData += this.drawTWave(tX, wave.t);
+        }
+
+        return pathData;
+    }
+
+    drawPWave(x, pData) {
+        const amplitude = pData.abnormal ? pData.amplitude * 1.3 : pData.amplitude;
+        const color = pData.abnormal ? '#ef4444' : '#059669';
         
-        let pathString = `M ${data[0][0]} ${data[0][1]}`;
-        for (let i = 1; i < data.length; i++) {
-            pathString += ` L ${data[i][0]} ${data[i][1]}`;
+        return ` L ${x} ${this.centerY} 
+                Q ${x + pData.width/3} ${this.centerY - amplitude} 
+                ${x + pData.width*2/3} ${this.centerY - amplitude/2} 
+                T ${x + pData.width} ${this.centerY}`;
+    }
+
+    drawQRS(x, qrsData) {
+        let pathData = ` L ${x} ${this.centerY}`;
+        
+        if (qrsData.qWave) {
+            pathData += ` L ${x + 5} ${this.centerY + 15}`;
         }
         
-        return pathString;
+        if (qrsData.wide) {
+            // 幅広QRS（VT、PVC）
+            pathData += ` L ${x + 10} ${this.centerY + 10}
+                         L ${x + 20} ${this.centerY - qrsData.amplitude}
+                         L ${x + 40} ${this.centerY + qrsData.amplitude * 0.8}
+                         L ${x + 60} ${this.centerY - 15}
+                         L ${x + qrsData.width} ${this.centerY}`;
+        } else {
+            // 正常幅QRS
+            pathData += ` L ${x + 5} ${this.centerY + 5}
+                         L ${x + 10} ${this.centerY - qrsData.amplitude}
+                         L ${x + 20} ${this.centerY + qrsData.amplitude * 0.6}
+                         L ${x + qrsData.width} ${this.centerY}`;
+        }
+        
+        return pathData;
     }
 
-    // 従来の静的波形もアニメーション
-    animateStaticWaves() {
-        const waves = document.querySelectorAll('.ecg-wave, .ecg-wave-abnormal');
-        waves.forEach((wave, index) => {
+    drawTWave(x, tData) {
+        const amplitude = tData.inverted ? -Math.abs(tData.amplitude) : tData.amplitude;
+        const peakedness = tData.peaked ? 1.5 : 1;
+        
+        return ` L ${x} ${this.centerY}
+                Q ${x + tData.width/3} ${this.centerY - amplitude * peakedness}
+                ${x + tData.width*2/3} ${this.centerY - amplitude * 0.7}
+                T ${x + tData.width} ${this.centerY}`;
+    }
+
+    drawAtrialFibrillation(startX) {
+        let pathData = `M ${startX} ${this.centerY}`;
+        
+        // 不規則なf波
+        for (let x = startX; x < startX + 200; x += 3) {
+            const amplitude = (Math.random() - 0.5) * 8;
+            pathData += ` L ${x} ${this.centerY + amplitude}`;
+        }
+        
+        return pathData;
+    }
+
+    animate() {
+        if (!this.isRunning) return;
+
+        // 既存の波形をクリア（背景矩形以外）
+        const paths = this.svg.querySelectorAll('path:not([d*="grid"])');
+        paths.forEach(path => path.remove());
+
+        // 新しい波形を描画
+        const pathData = this.drawWaveform(this.currentX);
+        
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', pathData);
+        path.setAttribute('stroke', this.getWaveformColor());
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+        
+        this.svg.appendChild(path);
+
+        // X座標を更新
+        this.currentX += this.speed;
+        
+        // 画面端に達したらリセット
+        if (this.currentX > this.width) {
+            this.currentX = 20;
+            // 少し待機してからリピート
             setTimeout(() => {
-                const length = wave.getTotalLength();
-                wave.style.strokeDasharray = length;
-                wave.style.strokeDashoffset = length;
-                wave.style.animation = 'dash 2s ease-in-out';
-            }, index * 300);
+                if (this.isRunning) {
+                    this.animate();
+                }
+            }, 1000);
+            return;
+        }
+
+        this.animationId = requestAnimationFrame(() => this.animate());
+    }
+
+    getWaveformColor() {
+        const colors = {
+            normal: '#059669',
+            pac: '#f59e0b',
+            pvc: '#ef4444',
+            af: '#8b5cf6',
+            vt: '#dc2626',
+            stemi: '#dc2626',
+            nstemi: '#f97316',
+            bradycardia: '#3b82f6',
+            avblock: '#6366f1'
+        };
+        return colors[this.waveformType] || '#059669';
+    }
+
+    start() {
+        this.isRunning = true;
+        this.animate();
+    }
+
+    stop() {
+        this.isRunning = false;
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+        }
+    }
+}
+
+// ページロード時に全ての心電図アニメーションを初期化
+document.addEventListener('DOMContentLoaded', function() {
+    // 各章のSVG要素を特定の波形タイプで初期化
+    const chapterWaveforms = {
+        'chapter1': 'normal',
+        'chapter2': 'normal', 
+        'chapter3': 'pac',
+        'chapter4': 'af',
+        'chapter5': 'bradycardia',
+        'chapter6': 'avblock',
+        'chapter7': 'stemi',
+        'chapter8': 'normal',
+        'chapter9': 'normal',
+        'chapter10': 'normal'
+    };
+
+    // 各章のSVG要素を見つけてアニメーションを設定
+    Object.keys(chapterWaveforms).forEach(chapterId => {
+        const chapter = document.getElementById(chapterId);
+        if (chapter) {
+            const svgElements = chapter.querySelectorAll('svg');
+            svgElements.forEach((svg, index) => {
+                let waveformType = chapterWaveforms[chapterId];
+                
+                // 第3章の特別処理（複数の波形タイプ）
+                if (chapterId === 'chapter3') {
+                    const waveTypes = ['normal', 'pac', 'pvc'];
+                    waveformType = waveTypes[index % waveTypes.length];
+                }
+                
+                // 第4章の特別処理
+                if (chapterId === 'chapter4') {
+                    const waveTypes = ['af', 'af', 'vt'];
+                    waveformType = waveTypes[index % waveTypes.length];
+                }
+                
+                // 第7章の特別処理
+                if (chapterId === 'chapter7') {
+                    const waveTypes = ['stemi', 'nstemi'];
+                    waveformType = waveTypes[index % waveTypes.length];
+                }
+
+                const animator = new BasicECGAnimator(svg, waveformType);
+                
+                // Intersection Observerで画面に表示されたときだけアニメーション
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            animator.start();
+                        } else {
+                            animator.stop();
+                        }
+                    });
+                }, {
+                    threshold: 0.1
+                });
+                
+                observer.observe(svg);
+            });
+        }
+    });
+});
+// SVG要素の修正
+document.addEventListener('DOMContentLoaded', function() {
+    // 全てのSVG要素を取得
+    const allSvgs = document.querySelectorAll('svg');
+    
+    allSvgs.forEach(svg => {
+        // 既存の内容をクリア（defs以外）
+        const children = Array.from(svg.children);
+        children.forEach(child => {
+            if (child.tagName !== 'defs') {
+                child.remove();
+            }
+        });
+        
+        // 基本的な属性を設定
+        svg.setAttribute('width', '100%');
+        svg.setAttribute('height', svg.getAttribute('height') || '100');
+        svg.setAttribute('viewBox', `0 0 500 ${svg.getAttribute('height') || '100'}`);
+        svg.style.border = '1px solid #e5e7eb';
+        svg.style.borderRadius = '4px';
+        svg.style.backgroundColor = '#fefefe';
+    });
+});
+
+// アニメーション管理システム
+class AnimationManager {
+    constructor() {
+        this.animators = new Map();
+        this.isInitialized = false;
+    }
+
+    initialize() {
+        if (this.isInitialized) return;
+        
+        // 少し遅延させてDOM構築完了を確実にする
+        setTimeout(() => {
+            this.setupAnimations();
+            this.isInitialized = true;
+        }, 500);
+    }
+
+    setupAnimations() {
+        // 各章の波形タイプマッピング
+        const chapterWaveforms = {
+            'chapter1': ['normal'],
+            'chapter2': ['normal'], 
+            'chapter3': ['normal', 'pac', 'pvc'],
+            'chapter4': ['af', 'af', 'vt'],
+            'chapter5': ['bradycardia'],
+            'chapter6': ['avblock'],
+            'chapter7': ['stemi', 'nstemi'],
+            'chapter8': ['normal'],
+            'chapter9': ['normal'],
+            'chapter10': ['normal']
+        };
+
+        Object.keys(chapterWaveforms).forEach(chapterId => {
+            const chapter = document.getElementById(chapterId);
+            if (chapter) {
+                const svgElements = chapter.querySelectorAll('svg');
+                const waveTypes = chapterWaveforms[chapterId];
+                
+                svgElements.forEach((svg, index) => {
+                    const waveformType = waveTypes[index % waveTypes.length];
+                    const animatorId = `${chapterId}_${index}`;
+                    
+                    // 既存のアニメーターがあれば停止
+                    if (this.animators.has(animatorId)) {
+                        this.animators.get(animatorId).stop();
+                    }
+                    
+                    // 新しいアニメーターを作成
+                    const animator = new BasicECGAnimator(svg, waveformType);
+                    this.animators.set(animatorId, animator);
+                    
+                    // Intersection Observerで制御
+                    const observer = new IntersectionObserver((entries) => {
+                        entries.forEach(entry => {
+                            const container = entry.target.closest('.wave-container');
+                            if (entry.isIntersecting) {
+                                animator.start();
+                                if (container) container.classList.add('animating');
+                            } else {
+                                animator.stop();
+                                if (container) container.classList.remove('animating');
+                            }
+                        });
+                    }, {
+                        threshold: 0.1,
+                        rootMargin: '50px'
+                    });
+                    
+                    observer.observe(svg);
+                });
+            }
+        });
+    }
+
+    stopAll() {
+        this.animators.forEach(animator => animator.stop());
+    }
+
+    restartAll() {
+        this.animators.forEach(animator => {
+            animator.stop();
+            setTimeout(() => animator.start(), 100);
         });
     }
 }
 
-// 心房細動アニメーション
-class AtrialFibrillationAnimator {
-    constructor(svgElement) {
-        this.svg = svgElement;
-        this.animationId = null;
-        this.isRunning = false;
-        this.width = 500;
-        this.height = 100;
-        this.centerY = 50;
-        this.currentX = 20;
-        this.lastQRSTime = 0;
-        this.nextQRSInterval = this.getRandomRRInterval();
-    }
+// グローバルアニメーションマネージャー
+window.ecgAnimationManager = new AnimationManager();
 
-    getRandomRRInterval() {
-        // 不規則なRR間隔（絶対性不整脈）
-        return 100 + Math.random() * 150; // 100-250ms（画面上の単位）
-    }
-
-    generateFibWave(x) {
-        // 細動波（f波）の生成
-        const amplitude = 2 + Math.random() * 3;
-        const frequency = 0.3 + Math.random() * 0.2;
-        return this.centerY + amplitude * Math.sin(x * frequency) * (0.5 + Math.random() * 0.5);
-    }
-
-    drawQRS(x) {
-        // 正常幅のQRS波形
-        const points = [
-            [x, this.centerY],
-            [x + 5, this.centerY + 5],
-            [x + 10, this.centerY - 25],
-            [x + 25, this.centerY + 25],
-            [x + 35, this.centerY],
-        ];
-        
-        let pathData = `M ${points[0][0]} ${points[0][1]}`;
-        for (let i = 1; i < points.length; i++) {
-            pathData += ` L ${points[i][0]} ${points[i][1]}`;
-        }
-        
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('d', pathData);
-        path.setAttribute('class', 'ecg-wave-abnormal');
-        path.setAttribute('stroke-width', '2');
-        this.svg.appendChild(path);
-        
-        return 35; // QRS幅
-    }
-
-    animate() {
-        if (!this.isRunning) return;
-
-        // 既存の波形をクリア
-        const paths = this.svg.querySelectorAll('path:not([d*="grid"])');
-        paths.forEach(path => path.remove());
-
-        // 細動波を描画
-        let pathData = `M 20 ${this.generateFibWave(20)}`;
-        for (let x = 21; x <= this.currentX; x++) {
-            pathData += ` L ${x} ${this.generateFibWave(x)}`;
-        }
-
-        const fibPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        fibPath.setAttribute('d', pathData);
-        fibPath.setAttribute('class', 'ecg-wave-abnormal');
-        fibPath.setAttribute('stroke-width', '1');
-        this.svg.appendChild(fibPath);
-
-        // QRS描画判定
-        if (this.currentX - this.lastQRSTime >= this.nextQRSInterval) {
-            const qrsWidth = this.drawQRS(this.currentX);
-            this.lastQRSTime = this.currentX;
-            this.currentX += qrsWidth;
-            this.nextQRSInterval = this.getRandomRRInterval();
-        }
-
-        this.currentX += 2;
-
-        if (this.currentX > this.width) {
-            this.currentX = 20;
-            this.lastQRSTime = 0;
-            this.nextQRSInterval = this.getRandomRRInterval();
-        }
-
-        this.animationId = requestAnimationFrame(() => this.animate());
-    }
-
-    start() {
-        this.isRunning = true;
-        this.animate();
-    }
-
-    stop() {
-        this.isRunning = false;
-        if (this.animationId) {
-            cancelAnimationFrame(this.animationId);
-        }
-    }
+// 複数の初期化ポイントで確実に実行
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        window.ecgAnimationManager.initialize();
+    });
+} else {
+    window.ecgAnimationManager.initialize();
 }
 
-// 心室頻拍アニメーション
-class VentricularTachycardiaAnimator {
-    constructor(svgElement) {
-        this.svg = svgElement;
-        this.animationId = null;
-        this.isRunning = false;
-        this.width = 500;
-        this.height = 100;
-        this.centerY = 50;
-        this.currentX = 20;
-        this.qrsInterval = 70; // 高頻度（約200bpm相当）
-        this.lastQRSTime = 0;
-    }
-
-    drawWideQRS(x) {
-        // 幅広QRS（0.12秒以上）
-        const points = [
-            [x, this.centerY],
-            [x + 10, this.centerY + 10],
-            [x + 20, this.centerY - 30],
-            [x + 40, this.centerY + 30],
-            [x + 55, this.centerY - 10],
-            [x + 70, this.centerY],
-        ];
-        
-        let pathData = `M ${points[0][0]} ${points[0][1]}`;
-        for (let i = 1; i < points.length; i++) {
-            pathData += ` L ${points[i][0]} ${points[i][1]}`;
-        }
-        
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('d', pathData);
-        path.setAttribute('class', 'ecg-wave-abnormal');
-        path.setAttribute('stroke-width', '3');
-        this.svg.appendChild(path);
-        
-        return 70; // 幅広QRS
-    }
-
-    animate() {
-        if (!this.isRunning) return;
-
-        // QRS描画判定
-        if (this.currentX - this.lastQRSTime >= this.qrsInterval) {
-            const qrsWidth = this.drawWideQRS(this.currentX);
-            this.lastQRSTime = this.currentX;
-            this.currentX += qrsWidth;
-        } else {
-            // 基線
-            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            path.setAttribute('d', `M ${this.currentX} ${this.centerY} L ${this.currentX + 2} ${this.centerY}`);
-            path.setAttribute('class', 'ecg-wave');
-            path.setAttribute('stroke-width', '1');
-            this.svg.appendChild(path);
-            this.currentX += 2;
-        }
-
-        if (this.currentX > this.width) {
-            this.currentX = 20;
-            this.lastQRSTime = 0;
-            // 既存の波形をクリア
-            const paths = this.svg.querySelectorAll('path:not([d*="grid"])');
-            paths.forEach(path => path.remove());
-        }
-
-        this.animationId = requestAnimationFrame(() => this.animate());
-    }
-
-    start() {
-        this.isRunning = true;
-        this.animate();
-    }
-
-    stop() {
-        this.isRunning = false;
-        if (this.animationId) {
-            cancelAnimationFrame(this.animationId);
-        }
-    }
-}
-
-// アニメーションの初期化
-document.addEventListener('DOMContentLoaded', function() {
-    // 心房細動アニメーション
-    const afSvgs = document.querySelectorAll('svg[viewBox*="500 100"]');
-    afSvgs.forEach((svg, index) => {
-        if (svg.closest('#chapter4')) {
-            const animator = new AtrialFibrillationAnimator(svg);
-            
-            // インターセクションオブザーバーでアニメーション制御
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        animator.start();
-                    } else {
-                        animator.stop();
-                    }
-                });
-            });
-            
-            observer.observe(svg);
-        }
-    });
-
-    // 心室頻拍アニメーション
-    const vtSvgs = document.querySelectorAll('svg[viewBox*="500 100"]');
-    vtSvgs.forEach((svg) => {
-        if (svg.closest('#chapter4') && svg.parentElement.parentElement.querySelector('h4')?.textContent.includes('VTの心電図所見')) {
-            const animator = new VentricularTachycardiaAnimator(svg);
-            
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        animator.start();
-                    } else {
-                        animator.stop();
-                    }
-                });
-            });
-            
-            observer.observe(svg);
-        }
-    });
+// ページ表示時にも実行
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        window.ecgAnimationManager.initialize();
+    }, 1000);
 });
