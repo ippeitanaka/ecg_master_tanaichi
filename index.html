@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>心電図マスター講座 Complete Edition - 完全版</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="enhanced_ecg.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            line-height: 1.6;
+        }
+        
+        .ecg-wave {
+            stroke: #10b981;
+            stroke-width: 2.5;
+            fill: none;
+        }
+        
+        .ecg-wave-abnormal {
+            stroke: #ef4444;
+            stroke-width: 2.5;
+            fill: none;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease-in;
+        }
+        
+        .question-box {
+            border-left: 4px solid #10b981;
+            background: linear-gradient(90deg, #f0fdf4 0%, #ffffff 100%);
+        }
+        
+        .answer-box {
+            border-left: 4px solid #3b82f6;
+            background: linear-gradient(90deg, #eff6ff 0%, #ffffff 100%);
+        }
+        
+        .section-divider {
+            height: 3px;
+            background: linear-gradient(90deg, #10b981, #3b82f6, #8b5cf6);
+            margin: 2rem 0;
+        }
+        
+        /* 目次の開閉機能 */
+        .chapter-nav {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            transition: all 0.3s ease;
+            max-width: 300px;
+        }
+
+        .nav-header {
+            padding: 12px 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px 10px 0 0;
+            user-select: none;
+        }
+
+        .nav-header:hover {
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+        }
+
+        .nav-toggle-icon {
+            transition: transform 0.3s ease;
+            font-size: 14px;
+        }
+
+        .nav-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            background: white;
+            border-radius: 0 0 10px 10px;
+        }
+
+        .nav-content.open {
+            max-height: 500px;
+            padding: 16px;
+        }
+
+        .nav-content .space-y-1 {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .nav-item {
+            padding: 8px 12px;
+            border-radius: 6px;
+            color: #4a5568;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            display: block;
+        }
+
+        .nav-item:hover {
+            background: #e2e8f0;
+            color: #2d3748;
+            transform: translateX(4px);
+        }
+
+        /* モバイル対応 */
+        @media (max-width: 768px) {
+            .chapter-nav {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+            }
+        }
+
+        /* コンパクト表示モード */
+        .nav-compact .nav-header {
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+
+        .nav-compact .nav-content.open {
+            max-height: 300px;
+            padding: 12px;
+        }
+
+        .nav-compact .nav-item {
+            padding: 6px 10px;
+            font-size: 13px;
+        }
+        
+        .nav-item {
+            display: block;
+            padding: 0.5rem 1rem;
+            color: #4a5568;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        
+        .nav-item:hover {
+            background: #edf2f7;
+            color: #2d3748;
+        }
+        
+        .clinical-tip {
+            background: linear-gradient(135deg, #fef3c7 0%, #fcd34d 100%);
+            border-left: 4px solid #f59e0b;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        
+        .pathology-box {
+            background: linear-gradient(135deg, #fee2e2 0%, #fca5a5 100%);
+            border-left: 4px solid #dc2626;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        
+        .measurement-guide {
+            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+            border-left: 4px solid #4f46e5;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    
+    <!-- ナビゲーション -->
+    <div class="chapter-nav">
+        <div class="nav-header">
+            <span>
+                <i class="fas fa-list mr-2"></i>
+                目次
+            </span>
+            <span class="nav-toggle-icon">▼</span>
+        </div>
+        <div class="nav-content">
+            <div class="space-y-1">
+                <a href="#chapter1" class="nav-item group hover:text-red-500 transition-colors duration-300">
+                    <i class="fas fa-book mr-2 group-hover:scale-110 transition-transform duration-300"></i>
+                    第1章：心電図の基礎知識
+                </a>
+                <a href="#chapter2" class="nav-item group hover:text-red-500 transition-colors duration-300">
+                    <i class="fas fa-chart-line mr-2 group-hover:scale-110 transition-transform duration-300"></i>
+                    第2章：正常心電図の読み方
+                </a>
+                <a href="#chapter3" class="nav-item group hover:text-red-500 transition-colors duration-300">
+                    <i class="fas fa-heartbeat mr-2 group-hover:scale-110 transition-transform duration-300"></i>
+                    第3章：期外収縮
+                </a>
+                <a href="#chapter4" class="nav-item group hover:text-red-500 transition-colors duration-300">
+                    <i class="fas fa-tachometer-alt mr-2 group-hover:scale-110 transition-transform duration-300"></i>
+                    第4章：頻脈性不整脈
+                </a>
+                <a href="#chapter5" class="nav-item group hover:text-red-500 transition-colors duration-300">
+                    <i class="fas fa-hourglass-half mr-2 group-hover:scale-110 transition-transform duration-300"></i>
+                    第5章：徐脈性不整脈
+                </a>
+                <a href="#chapter6" class="nav-item group hover:text-red-500 transition-colors duration-300">
+                    <i class="fas fa-road mr-2 group-hover:scale-110 transition-transform duration-300"></i>
+                    第6章：伝導障害
+                </a>
+                <a href="#chapter7" class="nav-item group hover:text-red-500 transition-colors duration-300">
+                    <i class="fas fa-heart mr-2 group-hover:scale-110 transition-transform duration-300"></i>
+                    第7章：虚血性心疾患
+                </a>
+                <a href="#chapter8" class="nav-item group hover:text-red-500 transition-colors duration-300">
+                    <i class="fas fa-star mr-2 group-hover:scale-110 transition-transform duration-300"></i>
+                    第8章：特殊な症候群
+                </a>
+                <a href="#chapter9" class="nav-item group hover:text-red-500 transition-colors duration-300">
+                    <i class="fas fa-flask mr-2 group-hover:scale-110 transition-transform duration-300"></i>
+                    第9章：電解質異常
+                </a>
+                <a href="#chapter10" class="nav-item group hover:text-red-500 transition-colors duration-300">
+                    <i class="fas fa-graduation-cap mr-2 group-hover:scale-110 transition-transform duration-300"></i>
+                    第10章：実践問題
+                </a>
+            </div>
+        </div>
+    </div>
+        <!-- ヘッダー -->
+    <header class="gradient-bg text-white py-12">
+        <div class="container mx-auto px-4">
+            <div class="text-center">
+                <h1 class="text-5xl font-bold mb-4">
+                    <i class="fas fa-heartbeat text-red-300 mr-3 pulse"></i>
+                    心電図マスター講座
+                    <span class="text-yellow-300">Complete Edition</span>
+                </h1>
+                <p class="text-xl opacity-90 mb-2">波形を見極めて、ハートのリズムを理解しよう！</p>
+                <p class="text-lg opacity-80">〜病気がみえるベースの完全版教材〜</p>
+                <div class="mt-6 flex justify-center space-x-4 flex-wrap">
+                    <span class="bg-red-500 px-4 py-2 rounded-full text-sm font-semibold mb-2">
+                        <i class="fas fa-star mr-1"></i>
+                        基礎から応用まで
+                    </span>
+                    <span class="bg-blue-500 px-4 py-2 rounded-full text-sm font-semibold mb-2">
+                        <i class="fas fa-graduation-cap mr-1"></i>
+                        医学生・研修医対応
+                    </span>
+                    <span class="bg-green-500 px-4 py-2 rounded-full text-sm font-semibold mb-2">
+                        <i class="fas fa-stethoscope mr-1"></i>
+                        臨床対応
+                    </span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- 第1章：心電図の基礎知識 -->
+        <section id="chapter1" class="mb-12 fade-in">
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <h2 class="text-4xl font-bold text-gray-800 mb-8 flex items-center">
+                    <i class="fas fa-book text-blue-500 mr-3"></i>
+                    第1章：心電図の基礎知識
+                </h2>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                    <div class="bg-blue-50 p-6 rounded-lg border-l-4 border-blue-400">
+                        <h3 class="text-2xl font-semibold text-blue-800 mb-4">心電図とは</h3>
+                        <p class="text-gray-700 mb-4">
+                            心電図（ECG/EKG）は、心臓の電気的活動を記録する検査です。心筋細胞の脱分極と再分極の過程を波形として表示し、心臓の機能状態を評価できます。
+                        </p>
+                        
+                        <!-- 正常心電図波形 -->
+                        <div class="wave-container mb-4 bg-white rounded-lg p-4 shadow-inner">
+                            <h4 class="text-sm font-semibold text-gray-600 mb-2">正常心電図（洞調律）</h4>
+                            <svg width="100%" height="120" viewBox="0 0 500 120" class="ecg-display">
+                                <defs>
+                                    <pattern id="grid-basic" width="5" height="5" patternUnits="userSpaceOnUse">
+                                        <path d="M 5 0 L 0 0 0 5" fill="none" stroke="#e5e7eb" stroke-width="0.5"/>
+                                    </pattern>
+                                    <pattern id="grid-major-basic" width="25" height="25" patternUnits="userSpaceOnUse">
+                                        <path d="M 25 0 L 0 0 0 25" fill="none" stroke="#d1d5db" stroke-width="1"/>
+                                    </pattern>
+                                </defs>
+                                <rect width="100%" height="100%" fill="url(#grid-basic)"/>
+                                <rect width="100%" height="100%" fill="url(#grid-major-basic)"/>
+                                
+                                <!-- 正常心電図波形 -->
+                                <path d="M 50 60 L 80 60 L 85 50 L 95 60 L 120 60 L 125 65 L 135 25 L 150 85 L 160 60 L 190 60 L 200 45 L 220 75 L 240 60 L 270 60 L 275 50 L 285 60 L 310 60 L 315 65 L 325 25 L 340 85 L 350 60 L 380 60 L 390 45 L 410 75 L 430 60 L 450 60" class="ecg-wave"/>
+                                
+                                <!-- ラベル -->
+                                <text x="90" y="45" fill="#059669" font-size="10" font-weight="bold">P</text>
+                                <text x="140" y="20" fill="#059669" font-size="10" font-weight="bold">QRS</text>
+                                <text x="210" y="40" fill="#059669" font-size="10" font-weight="bold">T</text>
+                                <text x="280" y="45" fill="#059669" font-size="10" font-weight="bold">P</text>
+                                <text x="330" y="20" fill="#059669" font-size="10" font-weight="bold">QRS</text>
+                                <text x="400" y="40" fill="#059669" font-size="10" font-weight="bold">T</text>
+                            </svg>
+                        </div>
+                        
+                        <ul class="text-sm text-gray-700 space-y-2">
+                            <li><strong>• 非侵襲的検査：</strong>体表面から電極で記録</li>
+                            <li><strong>• リアルタイム評価：</strong>心臓の状態を即座に把握</li>
+                            <li><strong>• 標準化された記録：</strong>世界共通の読み方</li>
+                        </ul>
+                    </div>
+
+                    <div class="pathology-box">
+                        <h3 class="text-2xl font-semibold text-red-800 mb-4">
+                            <i class="fas fa-bolt mr-2"></i>
+                            心臓の電気伝導系
+                        </h3>
+                        <div class="space-y-3">
+                            <div>
+                                <h4 class="font-semibold text-red-700 mb-1">洞結節（SA node）</h4>
+                                <p class="text-sm">心臓のペースメーカー、60-100回/分</p>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-red-700 mb-1">房室結節（AV node）</h4>
+                                <p class="text-sm">房室間の電気伝導を調節</p>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-red-700 mb-1">His束・脚</h4>
+                                <p class="text-sm">心室への電気伝導路</p>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-red-700 mb-1">Purkinje線維</h4>
+                                <p class="text-sm">心室筋への最終伝導</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="clinical-tip mb-8">
+                    <h3 class="text-2xl font-semibold text-amber-800 mb-4">
+                        <i class="fas fa-stethoscope mr-2"></i>
+                        12誘導心電図の基本
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <h4 class="font-semibold mb-2">肢誘導</h4>
+                            <ul class="text-sm space-y-1">
+                                <li>• Ⅰ、Ⅱ、Ⅲ</li>
+                                <li>• aVR、aVL、aVF</li>
+                                <li>• 前額面の心電図</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold mb-2">胸部誘導</h4>
+                            <ul class="text-sm space-y-1">
+                                <li>• V1-V6</li>
+                                <li>• 水平面の心電図</li>
+                                <li>• 左室の詳細評価</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold mb-2">記録条件</h4>
+                            <ul class="text-sm space-y-1">
+                                <li>• 紙送り速度：25mm/秒</li>
+                                <li>• 較正電圧：10mm/mV</li>
+                                <li>• フィルター：0.05-100Hz</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第2章：正常心電図の読み方 -->
+        <section id="chapter2" class="mb-12 fade-in">
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <h2 class="text-4xl font-bold text-gray-800 mb-8 flex items-center">
+                    <i class="fas fa-chart-line text-green-500 mr-3"></i>
+                    第2章：正常心電図の読み方
+                </h2>
+
+                <div class="mb-12">
+                    <h3 class="text-3xl font-semibold text-green-600 mb-8 flex items-center">
+                        <i class="fas fa-wave-square mr-2"></i>
+                        正常心電図の波形構成
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                        <div class="bg-green-50 p-6 rounded-lg border-l-4 border-green-400">
+                            <h4 class="text-xl font-bold text-green-800 mb-4">P-QRS-T波群</h4>
+                            <div class="wave-container mb-4 bg-white rounded-lg p-4 shadow-inner">
+                                <svg width="100%" height="150" viewBox="0 0 600 150" class="ecg-display">
+                                    <defs>
+                                        <pattern id="grid-normal" width="5" height="5" patternUnits="userSpaceOnUse">
+                                            <path d="M 5 0 L 0 0 0 5" fill="none" stroke="#e5e7eb" stroke-width="0.5"/>
+                                        </pattern>
+                                        <pattern id="grid-major-normal" width="25" height="25" patternUnits="userSpaceOnUse">
+                                            <path d="M 25 0 L 0 0 0 25" fill="none" stroke="#d1d5db" stroke-width="1"/>
+                                        </pattern>
+                                    </defs>
+                                    <rect width="100%" height="100%" fill="url(#grid-normal)"/>
+                                    <rect width="100%" height="100%" fill="url(#grid-major-normal)"/>
+                                    
+                                    <!-- 詳細な正常心電図波形 -->
+                                    <path d="M 50 75 L 100 75 L 110 60 L 120 75 L 140 75 L 145 80 L 155 35 L 170 115 L 180 75 L 220 75 L 240 55 L 270 95 L 300 75 L 400 75" class="ecg-wave"/>
+                                    
+                                    <!-- 波形の区間を示す線 -->
+                                    <line x1="100" y1="130" x2="140" y2="130" stroke="#22c55e" stroke-width="2"/>
+                                    <line x1="140" y1="130" x2="180" y2="130" stroke="#ef4444" stroke-width="2"/>
+                                    <line x1="220" y1="130" x2="300" y2="130" stroke="#3b82f6" stroke-width="2"/>
+                                    
+                                    <!-- ラベル -->
+                                    <text x="115" y="55" fill="#059669" font-size="14" font-weight="bold">P</text>
+                                    <text x="160" y="30" fill="#dc2626" font-size="14" font-weight="bold">QRS</text>
+                                    <text x="250" y="50" fill="#2563eb" font-size="14" font-weight="bold">T</text>
+                                    
+                                    <!-- 区間ラベル -->
+                                    <text x="115" y="145" fill="#22c55e" font-size="10">PR間隔</text>
+                                    <text x="155" y="145" fill="#ef4444" font-size="10">QRS幅</text>
+                                    <text x="250" y="145" fill="#3b82f6" font-size="10">QT間隔</text>
+                                    
+                                    <!-- 時間軸の目盛り -->
+                                    <text x="50" y="25" fill="#6b7280" font-size="8">0.0s</text>
+                                    <text x="175" y="25" fill="#6b7280" font-size="8">0.2s</text>
+                                    <text x="300" y="25" fill="#6b7280" font-size="8">0.4s</text>
+                                </svg>
+                            </div>
+                            <ul class="text-sm text-gray-700 space-y-2">
+                                <li><strong>• P波：</strong>心房脱分極（幅＜0.12秒、高さ＜2.5mm）</li>
+                                <li><strong>• QRS群：</strong>心室脱分極（幅0.06-0.10秒）</li>
+                                <li><strong>• T波：</strong>心室再分極</li>
+                                <li><strong>• PR間隔：</strong>0.12-0.20秒</li>
+                                <li><strong>• QT間隔：</strong>心拍数により変動</li>
+                            </ul>
+                        </div>
+
+                        <div class="measurement-guide">
+                            <h4 class="font-bold text-indigo-800 mb-3">
+                                <i class="fas fa-ruler mr-2"></i>
+                                正常値の目安
+                            </h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <h5 class="font-semibold text-indigo-700 mb-1">心拍数</h5>
+                                    <p class="text-sm">60-100回/分（安静時）</p>
+                                </div>
+                                <div>
+                                    <h5 class="font-semibold text-indigo-700 mb-1">リズム</h5>
+                                    <p class="text-sm">洞調律（規則正しいP-QRS-T）</p>
+                                </div>
+                                <div>
+                                    <h5 class="font-semibold text-indigo-700 mb-1">軸偏位</h5>
+                                    <p class="text-sm">正常軸：-30°〜+90°</p>
+                                </div>
+                                <div>
+                                    <h5 class="font-semibold text-indigo-700 mb-1">ST-T変化</h5>
+                                    <p class="text-sm">ST水平、T波陽性</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第5章：徐脈性不整脈 -->
+        <section id="chapter5" class="mb-12 fade-in">
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <h2 class="text-4xl font-bold text-gray-800 mb-8 flex items-center">
+                    <i class="fas fa-hourglass-half text-blue-600 mr-3"></i>
+                    第5章：徐脈性不整脈
+                </h2>
+
+                <div class="mb-12">
+                    <h3 class="text-3xl font-semibold text-blue-600 mb-8 flex items-center">
+                        <i class="fas fa-clock mr-2"></i>
+                        洞性徐脈
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="bg-blue-50 p-6 rounded-lg border-l-4 border-blue-400">
+                            <h4 class="text-xl font-bold text-blue-800 mb-4">洞性徐脈の特徴</h4>
+                            
+                            <!-- 洞性徐脈の心電図 -->
+                            <div class="wave-container mb-4 bg-white rounded-lg p-4 shadow-inner">
+                                <h5 class="text-sm font-semibold text-gray-600 mb-2">洞性徐脈（48回/分）</h5>
+                                <svg width="100%" height="120" viewBox="0 0 600 120" class="ecg-display">
+                                    <defs>
+                                        <pattern id="grid-brady" width="5" height="5" patternUnits="userSpaceOnUse">
+                                            <path d="M 5 0 L 0 0 0 5" fill="none" stroke="#e5e7eb" stroke-width="0.5"/>
+                                        </pattern>
+                                        <pattern id="grid-major-brady" width="25" height="25" patternUnits="userSpaceOnUse">
+                                            <path d="M 25 0 L 0 0 0 25" fill="none" stroke="#d1d5db" stroke-width="1"/>
+                                        </pattern>
+                                    </defs>
+                                    <rect width="100%" height="100%" fill="url(#grid-brady)"/>
+                                    <rect width="100%" height="100%" fill="url(#grid-major-brady)"/>
+                                    
+                                    <!-- 洞性徐脈波形（RR間隔が長い） -->
+                                    <path d="M 50 60 L 100 60 L 110 50 L 120 60 L 140 60 L 145 65 L 155 25 L 170 85 L 180 60 L 220 60 L 240 45 L 270 75 L 300 60 L 380 60 L 390 50 L 400 60 L 420 60 L 425 65 L 435 25 L 450 85 L 460 60 L 500 60 L 520 45 L 550 75 L 580 60" class="ecg-wave"/>
+                                    
+                                    <!-- RR間隔を示す線 -->
+                                    <line x1="155" y1="100" x2="435" y2="100" stroke="#3b82f6" stroke-width="2" stroke-dasharray="5,5"/>
+                                    <text x="280" y="115" fill="#3b82f6" font-size="10">RR間隔：1.25秒（48回/分）</text>
+                                    
+                                    <!-- ラベル -->
+                                    <text x="115" y="45" fill="#2563eb" font-size="12" font-weight="bold">P</text>
+                                    <text x="160" y="20" fill="#2563eb" font-size="12" font-weight="bold">QRS</text>
+                                    <text x="250" y="40" fill="#2563eb" font-size="12" font-weight="bold">T</text>
+                                </svg>
+                            </div>
+                            
+                            <ul class="text-sm text-gray-700 space-y-2">
+                                <li><strong>• 心拍数：</strong>＜60回/分</li>
+                                <li><strong>• P波：</strong>正常（洞調律）</li>
+                                <li><strong>• RR間隔：</strong>規則的</li>
+                                <li><strong>• QRS：</strong>正常幅</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="clinical-tip">
+                            <h4 class="font-bold text-amber-800 mb-3">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>
+                                徐脈の原因
+                            </h4>
+                            <ul class="text-sm space-y-1">
+                                <li>• 生理的：睡眠、スポーツ心</li>
+                                <li>• 薬剤性：β遮断薬、Ca拮抗薬</li>
+                                <li>• 病的：洞不全症候群</li>
+                                <li>• 代謝性：甲状腺機能低下症</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第6章：伝導障害 -->
+        <section id="chapter6" class="mb-12 fade-in">
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <h2 class="text-4xl font-bold text-gray-800 mb-8 flex items-center">
+                    <i class="fas fa-road text-orange-500 mr-3"></i>
+                    第6章：伝導障害
+                </h2>
+
+                <div class="mb-12">
+                    <h3 class="text-3xl font-semibold text-orange-600 mb-8 flex items-center">
+                        <i class="fas fa-ban mr-2"></i>
+                        房室ブロック
+                    </h3>
+                    
+                    <div class="pathology-box">
+                        <h4 class="font-bold text-red-800 mb-3">
+                            <i class="fas fa-list-ol mr-2"></i>
+                            房室ブロックの分類
+                        </h4>
+                        <div class="space-y-6">
+                            <div>
+                                <h5 class="font-semibold text-red-700 mb-2">1度房室ブロック</h5>
+                                
+                                <!-- 1度房室ブロックの心電図 -->
+                                <div class="wave-container mb-3 bg-white rounded-lg p-4 shadow-inner">
+                                    <svg width="100%" height="100" viewBox="0 0 500 100" class="ecg-display">
+                                        <defs>
+                                            <pattern id="grid-1st-avb" width="5" height="5" patternUnits="userSpaceOnUse">
+                                                <path d="M 5 0 L 0 0 0 5" fill="none" stroke="#e5e7eb" stroke-width="0.5"/>
+                                            </pattern>
+                                        </defs>
+                                        <rect width="100%" height="100%" fill="url(#grid-1st-avb)"/>
+                                        
+                                        <!-- 1度房室ブロック波形（PR延長） -->
+                                        <path d="M 50 50 L 90 50 L 100 40 L 110 50 L 180 50 L 185 55 L 195 15 L 210 75 L 220 50 L 260 50 L 280 35 L 310 65 L 340 50 L 450 50" class="ecg-wave-abnormal"/>
+                                        
+                                        <!-- PR間隔を示す線 -->
+                                        <line x1="90" y1="85" x2="185" y2="85" stroke="#ef4444" stroke-width="2"/>
+                                        <text x="120" y="95" fill="#ef4444" font-size="8">PR間隔：0.24秒</text>
+                                        
+                                        <text x="105" y="35" fill="#ef4444" font-size="10" font-weight="bold">P</text>
+                                        <text x="200" y="10" fill="#ef4444" font-size="10" font-weight="bold">QRS</text>
+                                    </svg>
+                                </div>
+                                
+                                <ul class="text-sm space-y-1">
+                                    <li>• PR間隔：＞0.20秒</li>
+                                    <li>• 全てのP波に対してQRSが続く</li>
+                                    <li>• 通常無症状</li>
+                                </ul>
+                            </div>
+                            
+                            <div>
+                                <h5 class="font-semibold text-red-700 mb-2">2度房室ブロック（Mobitz II型）</h5>
+                                
+                                <!-- 2度房室ブロック（Mobitz II型）の心電図 -->
+                                <div class="wave-container mb-3 bg-white rounded-lg p-4 shadow-inner">
+                                    <svg width="100%" height="100" viewBox="0 0 500 100" class="ecg-display">
+                                        <defs>
+                                            <pattern id="grid-2nd-avb" width="5" height="5" patternUnits="userSpaceOnUse">
+                                                <path d="M 5 0 L 0 0 0 5" fill="none" stroke="#e5e7eb" stroke-width="0.5"/>
+                                            </pattern>
+                                        </defs>
+                                        <rect width="100%" height="100%" fill="url(#grid-2nd-avb)"/>
+                                        
+                                        <!-- Mobitz II型波形（P波があってもQRSが脱落） -->
+                                        <path d="M 50 50 L 80 50 L 90 40 L 100 50 L 130 50 L 135 55 L 145 15 L 160 75 L 170 50 L 200 50 L 210 40 L 220 50 L 250 50 L 280 50 L 290 40 L 300 50 L 330 50 L 335 55 L 345 15 L 360 75 L 370 50 L 450 50" class="ecg-wave-abnormal"/>
+                                        
+                                        <!-- 脱落したQRSの位置を示す -->
+                                        <line x1="250" y1="10" x2="250" y2="90" stroke="#ef4444" stroke-width="2" stroke-dasharray="3,3"/>
+                                        <text x="230" y="8" fill="#ef4444" font-size="8">QRS脱落</text>
+                                        
+                                        <text x="95" y="35" fill="#ef4444" font-size="10" font-weight="bold">P</text>
+                                        <text x="150" y="10" fill="#ef4444" font-size="10" font-weight="bold">QRS</text>
+                                        <text x="295" y="35" fill="#ef4444" font-size="10" font-weight="bold">P</text>
+                                        <text x="350" y="10" fill="#ef4444" font-size="10" font-weight="bold">QRS</text>
+                                    </svg>
+                                </div>
+                                
+                                <ul class="text-sm space-y-1">
+                                    <li>• Mobitz I型：PR間隔が徐々に延長</li>
+                                    <li>• Mobitz II型：PR間隔一定でQRS脱落</li>
+                                    <li>• 高度房室ブロック：2:1、3:1伝導</li>
+                                </ul>
+                            </div>
+                            
+                            <div>
+                                <h5 class="font-semibold text-red-700 mb-2">3度房室ブロック（完全房室ブロック）</h5>
+                                
+                                <!-- 3度房室ブロックの心電図 -->
+                                <div class="wave-container mb-3 bg-white rounded-lg p-4 shadow-inner">
+                                    <svg width="100%" height="100" viewBox="0 0 500 100" class="ecg-display">
+                                        <defs>
+                                            <pattern id="grid-3rd-avb" width="5" height="5" patternUnits="userSpaceOnUse">
+                                                <path d="M 5 0 L 0 0 0 5" fill="none" stroke="#e5e7eb" stroke-width="0.5"/>
+                                            </pattern>
+                                        </defs>
+                                        <rect width="100%" height="100%" fill="url(#grid-3rd-avb)"/>
+                                        
+                                        <!-- P波（房室解離） -->
+                                        <path d="M 50 50 L 80 50 L 90 40 L 100 50 L 140 50 L 150 40 L 160 50 L 200 50 L 210 40 L 220 50 L 260 50 L 270 40 L 280 50 L 320 50 L 330 40 L 340 50 L 380 50 L 390 40 L 400 50 L 450 50" stroke="#ef4444" stroke-width="1.5" fill="none"/>
+                                        
+                                        <!-- QRS（心室調律） -->
+                                        <path d="M 120 50 L 125 55 L 135 15 L 150 75 L 160 50 L 280 50 L 285 55 L 295 15 L 310 75 L 320 50 L 440 50" stroke="#dc2626" stroke-width="2.5" fill="none"/>
+                                        
+                                        <!-- 解離を示す線 -->
+                                        <text x="30" y="20" fill="#ef4444" font-size="8">P波（心房）</text>
+                                        <text x="30" y="90" fill="#dc2626" font-size="8">QRS（心室）</text>
+                                        
+                                        <text x="95" y="35" fill="#ef4444" font-size="8">P</text>
+                                        <text x="140" y="10" fill="#dc2626" font-size="10" font-weight="bold">QRS</text>
+                                        <text x="215" y="35" fill="#ef4444" font-size="8">P</text>
+                                        <text x="300" y="10" fill="#dc2626" font-size="10" font-weight="bold">QRS</text>
+                                    </svg>
+                                </div>
+                                
+                                <ul class="text-sm space-y-1">
+                                    <li>• P波とQRSが完全に解離</li>
+                                    <li>• 房室結節性：40-60回/分</li>
+                                    <li>• 心室性：20-40回/分</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第8章：特殊な症候群 -->
+        <section id="chapter8" class="mb-12 fade-in">
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <h2 class="text-4xl font-bold text-gray-800 mb-8 flex items-center">
+                    <i class="fas fa-star text-purple-500 mr-3"></i>
+                    第8章：特殊な症候群
+                </h2>
+
+                <div class="mb-12">
+                    <h3 class="text-3xl font-semibold text-purple-600 mb-8 flex items-center">
+                        <i class="fas fa-bolt mr-2"></i>
+                        WPW症候群
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="bg-purple-50 p-6 rounded-lg border-l-4 border-purple-400">
+                            <h4 class="text-xl font-bold text-purple-800 mb-4">WPW症候群の特徴</h4>
+                            
+                            <!-- WPW症候群の心電図 -->
+                            <div class="wave-container mb-4 bg-white rounded-lg p-4 shadow-inner">
+                                <h5 class="text-sm font-semibold text-gray-600 mb-2">WPW症候群（δ波を認める）</h5>
+                                <svg width="100%" height="120" viewBox="0 0 500 120" class="ecg-display">
+                                    <defs>
+                                        <pattern id="grid-wpw" width="5" height="5" patternUnits="userSpaceOnUse">
+                                            <path d="M 5 0 L 0 0 0 5" fill="none" stroke="#e5e7eb" stroke-width="0.5"/>
+                                        </pattern>
+                                        <pattern id="grid-major-wpw" width="25" height="25" patternUnits="userSpaceOnUse">
+                                            <path d="M 25 0 L 0 0 0 25" fill="none" stroke="#d1d5db" stroke-width="1"/>
+                                        </pattern>
+                                    </defs>
+                                    <rect width="100%" height="100%" fill="url(#grid-wpw)"/>
+                                    <rect width="100%" height="100%" fill="url(#grid-major-wpw)"/>
+                                    
+                                    <!-- WPW症候群波形（短いPR、δ波、QRS拡大） -->
+                                    <path d="M 50 60 L 80 60 L 90 50 L 100 60 L 110 60 L 115 58 L 125 50 L 135 55 L 145 25 L 165 85 L 185 60 L 220 60 L 240 45 L 270 75 L 300 60 L 400 60" class="ecg-wave-abnormal"/>
+                                    
+                                    <!-- δ波を強調 -->
+                                    <circle cx="120" cy="56" r="3" fill="#8b5cf6" opacity="0.7"/>
+                                    <text x="105" y="45" fill="#8b5cf6" font-size="8" font-weight="bold">δ波</text>
+                                    
+                                    <!-- PR短縮を示す線 -->
+                                    <line x1="90" y1="100" x2="115" y2="100" stroke="#8b5cf6" stroke-width="2"/>
+                                    <text x="90" y="110" fill="#8b5cf6" font-size="8">短縮PR</text>
+                                    
+                                    <!-- QRS拡大を示す線 -->
+                                    <line x1="115" y1="95" x2="185" y2="95" stroke="#ef4444" stroke-width="2"/>
+                                    <text x="135" y="110" fill="#ef4444" font-size="8">QRS拡大</text>
+                                    
+                                    <text x="95" y="45" fill="#8b5cf6" font-size="10" font-weight="bold">P</text>
+                                    <text x="150" y="20" fill="#ef4444" font-size="10" font-weight="bold">QRS</text>
+                                    <text x="250" y="40" fill="#8b5cf6" font-size="10" font-weight="bold">T</text>
+                                </svg>
+                            </div>
+                            
+                            <ul class="text-sm text-gray-700 space-y-2">
+                                <li><strong>• PR短縮：</strong>＜0.12秒</li>
+                                <li><strong>• δ波：</strong>QRS立ち上がりが緩徐</li>
+                                <li><strong>• QRS幅拡大：</strong>＞0.10秒</li>
+                                <li><strong>• 副伝導路：</strong>Kent束の存在</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="clinical-tip">
+                            <h4 class="font-bold text-amber-800 mb-3">
+                                <i class="fas fa-heart-pulse mr-2"></i>
+                                合併する不整脈
+                            </h4>
+                            <ul class="text-sm space-y-1">
+                                <li>• 房室回帰性頻拍（AVRT）</li>
+                                <li>• 心房細動（危険な場合あり）</li>
+                                <li>• 心房粗動</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第9章：電解質異常 -->
+        <section id="chapter9" class="mb-12 fade-in">
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <h2 class="text-4xl font-bold text-gray-800 mb-8 flex items-center">
+                    <i class="fas fa-flask text-teal-500 mr-3"></i>
+                    第9章：電解質異常
+                </h2>
+
+                <div class="mb-12">
+                    <h3 class="text-3xl font-semibold text-teal-600 mb-8 flex items-center">
+                        <i class="fas fa-atom mr-2"></i>
+                        カリウム異常
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="bg-teal-50 p-6 rounded-lg border-l-4 border-teal-400">
+                            <h4 class="text-xl font-bold text-teal-800 mb-4">高カリウム血症</h4>
+                            
+                            <!-- 高カリウム血症の心電図 -->
+                            <div class="wave-container mb-4 bg-white rounded-lg p-4 shadow-inner">
+                                <h5 class="text-sm font-semibold text-gray-600 mb-2">高カリウム血症（T波の尖鋭化）</h5>
+                                <svg width="100%" height="120" viewBox="0 0 500 120" class="ecg-display">
+                                    <defs>
+                                        <pattern id="grid-hyperK" width="5" height="5" patternUnits="userSpaceOnUse">
+                                            <path d="M 5 0 L 0 0 0 5" fill="none" stroke="#e5e7eb" stroke-width="0.5"/>
+                                        </pattern>
+                                    </defs>
+                                    <rect width="100%" height="100%" fill="url(#grid-hyperK)"/>
+                                    
+                                    <!-- 高カリウム血症波形（T波増高・尖鋭化） -->
+                                    <path d="M 50 60 L 80 60 L 90 50 L 100 60 L 120 60 L 125 65 L 135 25 L 150 85 L 160 60 L 190 60 L 205 15 L 215 60 L 250 60 L 280 60 L 290 50 L 300 60 L 320 60 L 325 65 L 335 25 L 350 85 L 360 60 L 390 60 L 405 15 L 415 60 L 450 60" class="ecg-wave-abnormal"/>
+                                    
+                                    <!-- 尖鋭化したT波を強調 -->
+                                    <circle cx="210" cy="15" r="4" fill="none" stroke="#ef4444" stroke-width="2"/>
+                                    <circle cx="410" cy="15" r="4" fill="none" stroke="#ef4444" stroke-width="2"/>
+                                    <text x="195" y="10" fill="#ef4444" font-size="8">尖鋭T波</text>
+                                    
+                                    <text x="95" y="45" fill="#14b8a6" font-size="10" font-weight="bold">P</text>
+                                    <text x="140" y="20" fill="#14b8a6" font-size="10" font-weight="bold">QRS</text>
+                                    <text x="210" y="35" fill="#ef4444" font-size="10" font-weight="bold">T</text>
+                                </svg>
+                            </div>
+                            
+                            <ul class="text-sm text-gray-700 space-y-2">
+                                <li><strong>• T波増高：</strong>対称性、尖鋭化</li>
+                                <li><strong>• PR延長：</strong>P波平低化</li>
+                                <li><strong>• QRS拡大：</strong>重篤例</li>
+                                <li><strong>• 正弦波様：</strong>最重篤</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="bg-red-50 p-6 rounded-lg border-l-4 border-red-400">
+                            <h4 class="text-xl font-bold text-red-800 mb-4">低カリウム血症</h4>
+                            
+                            <!-- 低カリウム血症の心電図 -->
+                            <div class="wave-container mb-4 bg-white rounded-lg p-4 shadow-inner">
+                                <h5 class="text-sm font-semibold text-gray-600 mb-2">低カリウム血症（T波平低化・U波出現）</h5>
+                                <svg width="100%" height="120" viewBox="0 0 500 120" class="ecg-display">
+                                    <defs>
+                                        <pattern id="grid-hypoK" width="5" height="5" patternUnits="userSpaceOnUse">
+                                            <path d="M 5 0 L 0 0 0 5" fill="none" stroke="#e5e7eb" stroke-width="0.5"/>
+                                        </pattern>
+                                    </defs>
+                                    <rect width="100%" height="100%" fill="url(#grid-hypoK)"/>
+                                    
+                                    <!-- 低カリウム血症波形（T波平低化、U波出現） -->
+                                    <path d="M 50 60 L 80 60 L 90 50 L 100 60 L 120 60 L 125 65 L 135 25 L 150 85 L 160 60 L 190 60 L 200 58 L 210 60 L 220 55 L 230 60 L 250 60 L 280 60 L 290 50 L 300 60 L 320 60 L 325 65 L 335 25 L 350 85 L 360 60 L 390 60 L 400 58 L 410 60 L 420 55 L 430 60 L 450 60" class="ecg-wave-abnormal"/>
+                                    
+                                    <!-- U波を強調 -->
+                                    <circle cx="225" cy="57" r="3" fill="#3b82f6" opacity="0.7"/>
+                                    <circle cx="425" cy="57" r="3" fill="#3b82f6" opacity="0.7"/>
+                                    <text x="210" y="50" fill="#3b82f6" font-size="8">U波</text>
+                                    
+                                    <!-- T波平低化を示す -->
+                                    <text x="195" y="70" fill="#ef4444" font-size="8">平低T波</text>
+                                    
+                                    <text x="95" y="45" fill="#dc2626" font-size="10" font-weight="bold">P</text>
+                                    <text x="140" y="20" fill="#dc2626" font-size="10" font-weight="bold">QRS</text>
+                                    <text x="205" y="70" fill="#ef4444" font-size="10" font-weight="bold">T</text>
+                                    <text x="225" y="45" fill="#3b82f6" font-size="8" font-weight="bold">U</text>
+                                </svg>
+                            </div>
+                            
+                            <ul class="text-sm text-gray-700 space-y-2">
+                                <li><strong>• T波平低化：</strong>陰転化</li>
+                                <li><strong>• U波出現：</strong>T波後</li>
+                                <li><strong>• ST低下：</strong>軽度</li>
+                                <li><strong>• QT延長：</strong>見かけ上</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第10章：実践問題 -->
+        <section id="chapter10" class="mb-12 fade-in">
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <h2 class="text-4xl font-bold text-gray-800 mb-8 flex items-center">
+                    <i class="fas fa-graduation-cap text-indigo-500 mr-3"></i>
+                    第10章：実践問題
+                </h2>
+
+                <div class="clinical-tip mb-8">
+                    <h3 class="text-2xl font-semibold text-amber-800 mb-4">
+                        <i class="fas fa-clipboard-check mr-2"></i>
+                        心電図読影の系統的アプローチ
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold mb-3">基本チェック項目</h4>
+                            <ol class="text-sm space-y-2">
+                                <li><strong>1. リズム：</strong>規則性、洞調律</li>
+                                <li><strong>2. 心拍数：</strong>60-100回/分</li>
+                                <li><strong>3. P波：</strong>形状、PR間隔</li>
+                                <li><strong>4. QRS：</strong>幅、形状、軸</li>
+                                <li><strong>5. ST-T：</strong>上昇、低下、T波</li>
+                            </ol>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-semibold mb-3">重要な異常所見</h4>
+                            <ul class="text-sm space-y-2">
+                                <li>• ST上昇：急性心筋梗塞</li>
+                                <li>• ST低下：虚血、ジギタリス</li>
+                                <li>• 異常Q波：陳旧性心筋梗塞</li>
+                                <li>• 幅広QRS：心室性不整脈</li>
+                                <li>• QT延長：薬剤、電解質異常</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="measurement-guide">
+                    <h3 class="text-2xl font-semibold text-indigo-800 mb-4">
+                        <i class="fas fa-target mr-2"></i>
+                        緊急度判定
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-red-100 p-4 rounded border-l-4 border-red-500">
+                            <h4 class="font-bold text-red-800 mb-2">緊急</h4>
+                            <ul class="text-xs space-y-1">
+                                <li>• ST上昇型心筋梗塞</li>
+                                <li>• 心室頻拍・細動</li>
+                                <li>• 完全房室ブロック</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="bg-yellow-100 p-4 rounded border-l-4 border-yellow-500">
+                            <h4 class="font-bold text-yellow-800 mb-2">準緊急</h4>
+                            <ul class="text-xs space-y-1">
+                                <li>• NSTE-ACS</li>
+                                <li>• 持続性心房細動</li>
+                                <li>• 2度房室ブロック</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="bg-green-100 p-4 rounded border-l-4 border-green-500">
+                            <h4 class="font-bold text-green-800 mb-2">経過観察</h4>
+                            <ul class="text-xs space-y-1">
+                                <li>• 期外収縮</li>
+                                <li>• 洞性不整脈</li>
+                                <li>• 軽度ST-T変化</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    <main class="container mx-auto px-4 py-8 max-w-6xl">
+        
+        <!-- 第3章：期外収縮 -->
+        <section id="chapter3" class="mb-12 fade-in">
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <h2 class="text-4xl font-bold text-gray-800 mb-8 flex items-center">
+                    <i class="fas fa-exclamation-triangle text-orange-500 mr-3"></i>
+                    第3章：期外収縮（Premature Contractions）
+                </h2>
+
+                <div class="mb-8">
+                    <p class="text-lg text-gray-700 leading-relaxed">
+                        期外収縮は最も頻度の高い不整脈で、正常な洞調律に加わる早期の異所性収縮です。
+                        発生部位により<strong>上室性期外収縮（PAC）</strong>と<strong>心室性期外収縮（PVC）</strong>に分類されます。
+                        健常者にも認められますが、病的な場合もあるため、適切な評価が重要です。
+                    </p>
+                </div>
+
+                <!-- 上室性期外収縮 (PAC) -->
+                <div class="mb-12">
+                    <h3 class="text-3xl font-semibold text-orange-600 mb-8 flex items-center">
+                        <i class="fas fa-level-up-alt mr-2"></i>
+                        上室性期外収縮（PAC：Premature Atrial Contraction）
+                    </h3>
+                    
+                    <!-- PAC の基本 -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                        <div class="bg-orange-50 p-6 rounded-lg border-l-4 border-orange-400">
+                            <h4 class="text-xl font-bold text-orange-800 mb-4">PACの特徴</h4>
+                            <div class="wave-container mb-4">
+                                <svg width="100%" height="100" viewBox="0 0 500 100">
+                                    <defs>
+                                        <pattern id="grid-pac" width="20" height="20" patternUnits="userSpaceOnUse">
+                                            <rect width="20" height="20" fill="none" stroke="#fca5a5" stroke-width="0.5"/>
+                                            <rect width="100" height="100" fill="none" stroke="#dc2626" stroke-width="1"/>
+                                        </pattern>
+                                    </defs>
+                                    <rect width="100%" height="100%" fill="url(#grid-pac)"/>
+                                    <!-- 正常洞調律 -->
+                                    <path d="M 20 50 L 60 50 L 70 40 L 80 50 L 120 50 L 125 55 L 135 25 L 150 75 L 160 50 L 200 50" class="ecg-wave"/>
+                                    <!-- PAC -->
+                                    <path d="M 200 50 L 220 50 L 228 35 L 236 50 L 260 50 L 265 55 L 275 25 L 290 75 L 300 50 L 320 50" class="ecg-wave" stroke="#ea580c"/>
+                                    <!-- 正常洞調律続き -->
+                                    <path d="M 320 50 L 380 50 L 390 40 L 400 50 L 440 50 L 445 55 L 455 25 L 470 75 L 480 50" class="ecg-wave"/>
+                                    
+                                    <!-- 矢印とラベル -->
+                                    <path d="M 232 25 L 232 15" stroke="#ea580c" stroke-width="2" marker-end="url(#arrowhead)"/>
+                                    <text x="210" y="12" fill="#ea580c" font-size="12" font-weight="bold">早期P波</text>
+                                    
+                                    <!-- 不完全代償性休止 -->
+                                    <path d="M 160 85 L 320 85" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="3,3"/>
+                                    <text x="220" y="92" fill="#8b5cf6" font-size="10" font-weight="bold">不完全代償性休止</text>
+                                </svg>
+                            </div>
+                            <ul class="text-sm text-gray-700 space-y-2">
+                                <li><strong>• P波：</strong>早期に出現、形が正常と異なる</li>
+                                <li><strong>• QRS：</strong>正常幅（＜0.12秒）</li>
+                                <li><strong>• 代償性休止：</strong>不完全（短い）</li>
+                                <li><strong>• 頻度：</strong>健常者でも40-50%に認める</li>
+                            </ul>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div class="clinical-tip">
+                                <h4 class="font-bold text-amber-800 mb-3">
+                                    <i class="fas fa-stethoscope mr-2"></i>
+                                    臨床的意義
+                                </h4>
+                                <ul class="space-y-2 text-sm">
+                                    <li><strong>良性要因：</strong>ストレス、カフェイン、喫煙、睡眠不足</li>
+                                    <li><strong>病的要因：</strong>心房負荷、心房拡大、電解質異常</li>
+                                    <li><strong>予後：</strong>心房細動のリスク因子となることあり</li>
+                                </ul>
+                            </div>
+
+                            <div class="measurement-guide">
+                                <h4 class="font-bold text-indigo-800 mb-3">
+                                    <i class="fas fa-search mr-2"></i>
+                                    診断のポイント
+                                </h4>
+                                <ul class="space-y-2 text-sm">
+                                    <li><strong>1. P波の形：</strong>正常洞調律のP波と異なる</li>
+                                    <li><strong>2. 時期：</strong>予想されるよりも早い</li>
+                                    <li><strong>3. QRS：</strong>通常は正常形態</li>
+                                    <li><strong>4. 伝導：</strong>房室ブロックを伴うことあり</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PACの種類 -->
+                    <div class="mb-8">
+                        <h4 class="text-xl font-bold text-orange-800 mb-4">PACの種類と特徴</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
+                                <h5 class="font-semibold text-blue-800 mb-2">正常伝導型</h5>
+                                <ul class="text-sm space-y-1">
+                                    <li>• QRS正常形態</li>
+                                    <li>• 1:1房室伝導</li>
+                                    <li>• 最も頻度が高い</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-400">
+                                <h5 class="font-semibold text-yellow-800 mb-2">脚ブロック型</h5>
+                                <ul class="text-sm space-y-1">
+                                    <li>• QRS幅広い</li>
+                                    <li>• 機能的脚ブロック</li>
+                                    <li>• PVCと鑑別要</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="bg-red-50 p-4 rounded-lg border-l-4 border-red-400">
+                                <h5 class="font-semibold text-red-800 mb-2">房室ブロック型</h5>
+                                <ul class="text-sm space-y-1">
+                                    <li>• P波のみでQRSなし</li>
+                                    <li>• 房室結節不応期</li>
+                                    <li>• blocked PACと呼ぶ</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 心室性期外収縮 (PVC) -->
+                <div class="mb-12">
+                    <h3 class="text-3xl font-semibold text-red-600 mb-8 flex items-center">
+                        <i class="fas fa-level-down-alt mr-2"></i>
+                        心室性期外収縮（PVC：Premature Ventricular Contraction）
+                    </h3>
+                    
+                    <!-- PVC の基本 -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                        <div class="bg-red-50 p-6 rounded-lg border-l-4 border-red-400">
+                            <h4 class="text-xl font-bold text-red-800 mb-4">PVCの特徴</h4>
+                            <div class="wave-container mb-4">
+                                <svg width="100%" height="100" viewBox="0 0 500 100">
+                                    <rect width="100%" height="100%" fill="url(#grid-pac)"/>
+                                    <!-- 正常洞調律 -->
+                                    <path d="M 20 50 L 60 50 L 70 40 L 80 50 L 120 50 L 125 55 L 135 25 L 150 75 L 160 50 L 200 50" class="ecg-wave"/>
+                                    <!-- PVC -->
+                                    <path d="M 200 50 L 220 50 L 230 60 L 250 15 L 275 85 L 295 40 L 310 50 L 360 50" class="ecg-wave-abnormal"/>
+                                    <!-- 正常洞調律続き -->
+                                    <path d="M 360 50 L 400 50 L 410 40 L 420 50 L 460 50 L 465 55 L 475 25 L 490 75" class="ecg-wave"/>
+                                    
+                                    <!-- 幅広QRS表示 -->
+                                    <path d="M 220 80 L 310 80" stroke="#dc2626" stroke-width="3"/>
+                                    <text x="240" y="92" fill="#dc2626" font-size="10" font-weight="bold">幅広QRS (≥0.12秒)</text>
+                                    
+                                    <!-- 完全代償性休止 -->
+                                    <path d="M 160 15 L 360 15" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="3,3"/>
+                                    <text x="230" y="12" fill="#8b5cf6" font-size="10" font-weight="bold">完全代償性休止</text>
+                                </svg>
+                            </div>
+                            <ul class="text-sm text-gray-700 space-y-2">
+                                <li><strong>• P波：</strong>先行するP波なし</li>
+                                <li><strong>• QRS：</strong>0.12秒以上の幅広い波形</li>
+                                <li><strong>• 代償性休止：</strong>完全（長い）</li>
+                                <li><strong>• T波：</strong>QRSと反対方向</li>
+                            </ul>
+                        </div>
+
+                        <div class="pathology-box">
+                            <h4 class="font-bold text-red-800 mb-3">
+                                <i class="fas fa-exclamation-circle mr-2"></i>
+                                PVCの重要な分類
+                            </h4>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <h5 class="font-semibold text-red-700 mb-2">形態による分類</h5>
+                                    <ul class="space-y-1 text-sm">
+                                        <li><strong>単形性：</strong>同一起源、比較的安全</li>
+                                        <li><strong>多形性：</strong>多起源、危険性が高い</li>
+                                        <li><strong>二方向性：</strong>交互に異なる形態</li>
+                                    </ul>
+                                </div>
+                                
+                                <div>
+                                    <h5 class="font-semibold text-red-700 mb-2">連発による分類</h5>
+                                    <ul class="space-y-1 text-sm">
+                                        <li><strong>単発：</strong>1個ずつ出現</li>
+                                        <li><strong>二段脈：</strong>1個おきに出現</li>
+                                        <li><strong>三段脈：</strong>2個おきに出現</li>
+                                        <li><strong>連発：</strong>2個以上連続（危険）</li>
+                                    </ul>
+                                </div>
+                                
+                                <div>
+                                    <h5 class="font-semibold text-red-700 mb-2">タイミングによる分類</h5>
+                                    <ul class="space-y-1 text-sm">
+                                        <li><strong>R on T現象：</strong>T波上に出現、VFリスク</li>
+                                        <li><strong>Late PVC：</strong>T波後に出現、比較的安全</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lownの分類 -->
+                    <div class="mb-8">
+                        <h4 class="text-xl font-bold text-red-800 mb-4">Lownの分類（重症度評価）</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                            <div class="bg-green-100 p-4 rounded-lg border-l-4 border-green-500">
+                                <h5 class="font-bold text-green-800 mb-2">Grade 0</h5>
+                                <p class="text-sm">PVCなし</p>
+                            </div>
+                            
+                            <div class="bg-green-100 p-4 rounded-lg border-l-4 border-green-500">
+                                <h5 class="font-bold text-green-800 mb-2">Grade 1</h5>
+                                <p class="text-sm">散発性PVC</p>
+                                <p class="text-xs text-green-700">＜30個/時</p>
+                            </div>
+                            
+                            <div class="bg-yellow-100 p-4 rounded-lg border-l-4 border-yellow-500">
+                                <h5 class="font-bold text-yellow-800 mb-2">Grade 2</h5>
+                                <p class="text-sm">頻発性PVC</p>
+                                <p class="text-xs text-yellow-700">≥30個/時</p>
+                            </div>
+                            
+                            <div class="bg-orange-100 p-4 rounded-lg border-l-4 border-orange-500">
+                                <h5 class="font-bold text-orange-800 mb-2">Grade 3</h5>
+                                <p class="text-sm">多形性PVC</p>
+                                <p class="text-xs text-orange-700">形態が異なる</p>
+                            </div>
+                            
+                            <div class="bg-red-100 p-4 rounded-lg border-l-4 border-red-500">
+                                <h5 class="font-bold text-red-800 mb-2">Grade 4-5</h5>
+                                <p class="text-sm">4a: couplet</p>
+                                <p class="text-sm">4b: VT</p>
+                                <p class="text-sm">5: R on T</p>
+                            </div>
+                        </div>
+                        
+                        <div class="clinical-tip mt-4">
+                            <h5 class="font-bold text-amber-800 mb-2">
+                                <i class="fas fa-heart mr-2"></i>
+                                臨床的意義
+                            </h5>
+                            <ul class="space-y-1 text-sm">
+                                <li><strong>Grade 0-2：</strong>経過観察、症状があれば治療考慮</li>
+                                <li><strong>Grade 3-4a：</strong>心機能評価、治療検討</li>
+                                <li><strong>Grade 4b-5：</strong>緊急治療適応、VF移行リスク</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- PVCの起源同定 -->
+                    <div class="mb-8">
+                        <h4 class="text-xl font-bold text-red-800 mb-4">PVCの起源同定</h4>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="measurement-guide">
+                                <h5 class="font-semibold text-indigo-800 mb-3">右室起源PVC</h5>
+                                <ul class="space-y-1 text-sm">
+                                    <li>• V1でQS型またはrS型</li>
+                                    <li>• 下壁誘導で上向き</li>
+                                    <li>• 左脚ブロック様形態</li>
+                                    <li>• 流出路起源が多い</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="measurement-guide">
+                                <h5 class="font-semibold text-indigo-800 mb-3">左室起源PVC</h5>
+                                <ul class="space-y-1 text-sm">
+                                    <li>• V1でR型またはRS型</li>
+                                    <li>• 右脚ブロック様形態</li>
+                                    <li>• 心疾患に伴うことが多い</li>
+                                    <li>• より病的な意義</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 治療とフォローアップ -->
+                <div class="mb-10">
+                    <h3 class="text-2xl font-semibold text-purple-600 mb-6 flex items-center">
+                        <i class="fas fa-prescription-bottle-alt mr-2"></i>
+                        期外収縮の治療とフォローアップ
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="clinical-tip">
+                            <h4 class="font-bold text-amber-800 mb-3">
+                                <i class="fas fa-pills mr-2"></i>
+                                薬物療法
+                            </h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <h5 class="font-semibold mb-1">上室性期外収縮</h5>
+                                    <ul class="text-sm space-y-1">
+                                        <li>• β遮断薬（第一選択）</li>
+                                        <li>• Ca拮抗薬（ベラパミル等）</li>
+                                        <li>• 抗不整脈薬（症状が強い場合）</li>
+                                    </ul>
+                                </div>
+                                
+                                <div>
+                                    <h5 class="font-semibold mb-1">心室性期外収縮</h5>
+                                    <ul class="text-sm space-y-1">
+                                        <li>• β遮断薬（症状軽減）</li>
+                                        <li>• Ia群抗不整脈薬</li>
+                                        <li>• アミオダロン（重症例）</li>
+                                        <li>• ICD（高リスク例）</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="pathology-box">
+                            <h4 class="font-bold text-red-800 mb-3">
+                                <i class="fas fa-search-plus mr-2"></i>
+                                検査・評価
+                            </h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <h5 class="font-semibold mb-1">基本検査</h5>
+                                    <ul class="text-sm space-y-1">
+                                        <li>• 12誘導心電図</li>
+                                        <li>• Holter心電図（24時間）</li>
+                                        <li>• 心エコー検査</li>
+                                        <li>• 血液検査（電解質）</li>
+                                    </ul>
+                                </div>
+                                
+                                <div>
+                                    <h5 class="font-semibold mb-1">追加検査（必要時）</h5>
+                                    <ul class="text-sm space-y-1">
+                                        <li>• 運動負荷試験</li>
+                                        <li>• 心カテーテル検査</li>
+                                        <li>• 心筋シンチ</li>
+                                        <li>• 電気生理学的検査</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="section-divider"></div>
+
+    </main>
+
+    <!-- フッター -->
+    <footer class="gradient-bg text-white py-8">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-lg mb-2">
+                <i class="fas fa-heartbeat text-red-300 mr-2 pulse"></i>
+                心電図マスター講座 Complete Edition
+            </p>
+            <p class="opacity-80">
+                病気がみえるベースの包括的心電図教材
+            </p>
+            <p class="text-sm mt-4 opacity-70">
+                ※この教材は教育目的で作成されています。実際の臨床では必ず指導医と相談してください。
+            </p>
+        </div>
+    </footer>
+
+    <!-- JavaScriptファイル -->
+    <script src="enhanced_ecg.js"></script>
+    
+    <script>
+// ページの初期化とナビゲーション制御
+document.addEventListener('DOMContentLoaded', function() {
+    // ページロード時の処理
+    function initializePage() {
+        // URLハッシュがない場合は第1章を表示
+        if (!window.location.hash) {
+            // 少し遅延させてスムーズにスクロール
+            setTimeout(() => {
+                const chapter1 = document.getElementById('chapter1');
+                if (chapter1) {
+                    chapter1.scrollIntoView({ 
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+                // URLも更新
+                history.replaceState(null, null, '#chapter1');
+            }, 100);
+        }
+    }
+
+    // 章の表示制御
+    function showChapter(chapterId) {
+        const targetChapter = document.getElementById(chapterId);
+        if (targetChapter) {
+            targetChapter.scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start'
+            });
+            
+            // ナビゲーションアイテムのアクティブ状態を更新
+            updateActiveNavItem(chapterId);
+        }
+    }
+
+    // アクティブなナビゲーションアイテムを更新
+    function updateActiveNavItem(chapterId) {
+        // 全てのナビゲーションアイテムからアクティブクラスを削除
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.remove('active-nav-item');
+        });
+        
+        // 対応するナビゲーションアイテムにアクティブクラスを追加
+        const activeNavItem = document.querySelector(`a[href="#${chapterId}"]`);
+        if (activeNavItem) {
+            activeNavItem.classList.add('active-nav-item');
+        }
+    }
+
+    // ナビゲーションアイテムのクリックイベント
+    document.querySelectorAll('.nav-item').forEach(navItem => {
+        navItem.addEventListener('click', function(e) {
+            e.preventDefault();
+            const chapterId = this.getAttribute('href').substring(1);
+            showChapter(chapterId);
+            
+            // URLを更新
+            history.pushState(null, null, `#${chapterId}`);
+        });
+    });
+
+    // ブラウザの戻る/進むボタン対応
+    window.addEventListener('popstate', function() {
+        const hash = window.location.hash.substring(1);
+        if (hash) {
+            showChapter(hash);
+        } else {
+            showChapter('chapter1');
+        }
+    });
+
+    // スクロール時の章の自動検出とナビゲーション更新
+    let isScrolling = false;
+    function handleScroll() {
+        if (isScrolling) return;
+        
+        const chapters = document.querySelectorAll('section[id^="chapter"]');
+        const viewportTop = window.pageYOffset + 100; // オフセット
+        
+        let currentChapter = 'chapter1';
+        chapters.forEach(chapter => {
+            const chapterTop = chapter.offsetTop;
+            if (viewportTop >= chapterTop) {
+                currentChapter = chapter.id;
+            }
+        });
+        
+        updateActiveNavItem(currentChapter);
+        
+        // URLを静かに更新（履歴には追加しない）
+        if (window.location.hash !== `#${currentChapter}`) {
+            history.replaceState(null, null, `#${currentChapter}`);
+        }
+    }
+
+    // スクロールイベントをスロットリング
+    let scrollTimeout;
+    window.addEventListener('scroll', function() {
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(handleScroll, 100);
+    });
+
+    // ページ初期化
+    initializePage();
+});
+
+        // ECGアニメーター初期化
+        let ecgAnimator;
+        
+        // ページロード後にアニメーション開始
+        window.addEventListener('load', function() {
+            // 既存のフェードイン効果
+            const elements = document.querySelectorAll('.fade-in');
+            elements.forEach((el, index) => {
+                setTimeout(() => {
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateY(0)';
+                }, index * 200);
+            });
+
+            // 高品質心電図アニメーションを初期化
+            setTimeout(() => {
+                ecgAnimator = new ECGAnimator();
+                setTimeout(() => {
+                    ecgAnimator.animateStaticWaves();
+                }, 1000);
+            }, 2000);
+        });
+
+        // スムーズスクロール
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+<script>
+// ページの初期化とナビゲーション制御
+document.addEventListener('DOMContentLoaded', function() {
+    // ページロード時の処理
+    function initializePage() {
+        // URLハッシュがない場合は第1章を表示
+        if (!window.location.hash) {
+            // 少し遅延させてスムーズにスクロール
+            setTimeout(() => {
+                const chapter1 = document.getElementById('chapter1');
+                if (chapter1) {
+                    chapter1.scrollIntoView({ 
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+                // URLも更新
+                history.replaceState(null, null, '#chapter1');
+            }, 100);
+        }
+    }
+
+    // 章の表示制御
+    function showChapter(chapterId) {
+        const targetChapter = document.getElementById(chapterId);
+        if (targetChapter) {
+            targetChapter.scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start'
+            });
+            
+            // ナビゲーションアイテムのアクティブ状態を更新
+            updateActiveNavItem(chapterId);
+        }
+    }
+
+    // アクティブなナビゲーションアイテムを更新
+    function updateActiveNavItem(chapterId) {
+        // 全てのナビゲーションアイテムからアクティブクラスを削除
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.remove('active-nav-item');
+        });
+        
+        // 対応するナビゲーションアイテムにアクティブクラスを追加
+        const activeNavItem = document.querySelector(`a[href="#${chapterId}"]`);
+        if (activeNavItem) {
+            activeNavItem.classList.add('active-nav-item');
+        }
+    }
+
+    // ナビゲーションアイテムのクリックイベント
+    document.querySelectorAll('.nav-item').forEach(navItem => {
+        navItem.addEventListener('click', function(e) {
+            e.preventDefault();
+            const chapterId = this.getAttribute('href').substring(1);
+            showChapter(chapterId);
+            
+            // URLを更新
+            history.pushState(null, null, `#${chapterId}`);
+        });
+    });
+
+    // ブラウザの戻る/進むボタン対応
+    window.addEventListener('popstate', function() {
+        const hash = window.location.hash.substring(1);
+        if (hash) {
+            showChapter(hash);
+        } else {
+            showChapter('chapter1');
+        }
+    });
+
+    // スクロール時の章の自動検出とナビゲーション更新
+    let isScrolling = false;
+    function handleScroll() {
+        if (isScrolling) return;
+        
+        const chapters = document.querySelectorAll('section[id^="chapter"]');
+        const viewportTop = window.pageYOffset + 100; // オフセット
+        
+        let currentChapter = 'chapter1';
+        chapters.forEach(chapter => {
+            const chapterTop = chapter.offsetTop;
+            if (viewportTop >= chapterTop) {
+                currentChapter = chapter.id;
+            }
+        });
+        
+        updateActiveNavItem(currentChapter);
+        
+        // URLを静かに更新（履歴には追加しない）
+        if (window.location.hash !== `#${currentChapter}`) {
+            history.replaceState(null, null, `#${currentChapter}`);
+        }
+    }
+
+    // スクロールイベントをスロットリング
+    let scrollTimeout;
+    window.addEventListener('scroll', function() {
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(handleScroll, 100);
+    });
+
+    // ページ初期化
+    initializePage();
+});
+
+// 目次の開閉機能
+document.addEventListener('DOMContentLoaded', function() {
+    const navHeader = document.querySelector('.nav-header');
+    const navContent = document.querySelector('.nav-content');
+    const toggleIcon = document.querySelector('.nav-toggle-icon');
+    let isOpen = false;
+
+    // 開閉機能
+    function toggleNav() {
+        isOpen = !isOpen;
+        
+        if (isOpen) {
+            navContent.classList.add('open');
+            toggleIcon.style.transform = 'rotate(180deg)';
+            toggleIcon.textContent = '▲';
+        } else {
+            navContent.classList.remove('open');
+            toggleIcon.style.transform = 'rotate(0deg)';
+            toggleIcon.textContent = '▼';
+        }
+        
+        // 状態をローカルストレージに保存
+        localStorage.setItem('navOpen', isOpen);
+    }
+
+    // クリックイベント
+    navHeader.addEventListener('click', toggleNav);
+
+    // 保存された状態を復元
+    const savedState = localStorage.getItem('navOpen');
+    if (savedState === 'true') {
+        toggleNav();
+    }
+
+    // スクロール時のコンパクト表示
+    let lastScrollTop = 0;
+    const nav = document.querySelector('.chapter-nav');
+    
+    window.addEventListener('scroll', function() {
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        
+        if (scrollTop > 200) {
+            nav.classList.add('nav-compact');
+        } else {
+            nav.classList.remove('nav-compact');
+        }
+        
+        lastScrollTop = scrollTop;
+    });
+
+    // ナビゲーションアイテムクリック時の自動閉じ機能（モバイル用）
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', function() {
+            if (window.innerWidth <= 768 && isOpen) {
+                setTimeout(() => {
+                    toggleNav();
+                }, 300);
+            }
+        });
+    });
+});
+</script>
+</body>
+</html>
