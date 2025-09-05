@@ -272,3 +272,229 @@ class ECGAnimator {
         });
     }
 }
+
+// 心房細動アニメーション
+class AtrialFibrillationAnimator {
+    constructor(svgElement) {
+        this.svg = svgElement;
+        this.animationId = null;
+        this.isRunning = false;
+        this.width = 500;
+        this.height = 100;
+        this.centerY = 50;
+        this.currentX = 20;
+        this.lastQRSTime = 0;
+        this.nextQRSInterval = this.getRandomRRInterval();
+    }
+
+    getRandomRRInterval() {
+        // 不規則なRR間隔（絶対性不整脈）
+        return 100 + Math.random() * 150; // 100-250ms（画面上の単位）
+    }
+
+    generateFibWave(x) {
+        // 細動波（f波）の生成
+        const amplitude = 2 + Math.random() * 3;
+        const frequency = 0.3 + Math.random() * 0.2;
+        return this.centerY + amplitude * Math.sin(x * frequency) * (0.5 + Math.random() * 0.5);
+    }
+
+    drawQRS(x) {
+        // 正常幅のQRS波形
+        const points = [
+            [x, this.centerY],
+            [x + 5, this.centerY + 5],
+            [x + 10, this.centerY - 25],
+            [x + 25, this.centerY + 25],
+            [x + 35, this.centerY],
+        ];
+        
+        let pathData = `M ${points[0][0]} ${points[0][1]}`;
+        for (let i = 1; i < points.length; i++) {
+            pathData += ` L ${points[i][0]} ${points[i][1]}`;
+        }
+        
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', pathData);
+        path.setAttribute('class', 'ecg-wave-abnormal');
+        path.setAttribute('stroke-width', '2');
+        this.svg.appendChild(path);
+        
+        return 35; // QRS幅
+    }
+
+    animate() {
+        if (!this.isRunning) return;
+
+        // 既存の波形をクリア
+        const paths = this.svg.querySelectorAll('path:not([d*="grid"])');
+        paths.forEach(path => path.remove());
+
+        // 細動波を描画
+        let pathData = `M 20 ${this.generateFibWave(20)}`;
+        for (let x = 21; x <= this.currentX; x++) {
+            pathData += ` L ${x} ${this.generateFibWave(x)}`;
+        }
+
+        const fibPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        fibPath.setAttribute('d', pathData);
+        fibPath.setAttribute('class', 'ecg-wave-abnormal');
+        fibPath.setAttribute('stroke-width', '1');
+        this.svg.appendChild(fibPath);
+
+        // QRS描画判定
+        if (this.currentX - this.lastQRSTime >= this.nextQRSInterval) {
+            const qrsWidth = this.drawQRS(this.currentX);
+            this.lastQRSTime = this.currentX;
+            this.currentX += qrsWidth;
+            this.nextQRSInterval = this.getRandomRRInterval();
+        }
+
+        this.currentX += 2;
+
+        if (this.currentX > this.width) {
+            this.currentX = 20;
+            this.lastQRSTime = 0;
+            this.nextQRSInterval = this.getRandomRRInterval();
+        }
+
+        this.animationId = requestAnimationFrame(() => this.animate());
+    }
+
+    start() {
+        this.isRunning = true;
+        this.animate();
+    }
+
+    stop() {
+        this.isRunning = false;
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+        }
+    }
+}
+
+// 心室頻拍アニメーション
+class VentricularTachycardiaAnimator {
+    constructor(svgElement) {
+        this.svg = svgElement;
+        this.animationId = null;
+        this.isRunning = false;
+        this.width = 500;
+        this.height = 100;
+        this.centerY = 50;
+        this.currentX = 20;
+        this.qrsInterval = 70; // 高頻度（約200bpm相当）
+        this.lastQRSTime = 0;
+    }
+
+    drawWideQRS(x) {
+        // 幅広QRS（0.12秒以上）
+        const points = [
+            [x, this.centerY],
+            [x + 10, this.centerY + 10],
+            [x + 20, this.centerY - 30],
+            [x + 40, this.centerY + 30],
+            [x + 55, this.centerY - 10],
+            [x + 70, this.centerY],
+        ];
+        
+        let pathData = `M ${points[0][0]} ${points[0][1]}`;
+        for (let i = 1; i < points.length; i++) {
+            pathData += ` L ${points[i][0]} ${points[i][1]}`;
+        }
+        
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', pathData);
+        path.setAttribute('class', 'ecg-wave-abnormal');
+        path.setAttribute('stroke-width', '3');
+        this.svg.appendChild(path);
+        
+        return 70; // 幅広QRS
+    }
+
+    animate() {
+        if (!this.isRunning) return;
+
+        // QRS描画判定
+        if (this.currentX - this.lastQRSTime >= this.qrsInterval) {
+            const qrsWidth = this.drawWideQRS(this.currentX);
+            this.lastQRSTime = this.currentX;
+            this.currentX += qrsWidth;
+        } else {
+            // 基線
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', `M ${this.currentX} ${this.centerY} L ${this.currentX + 2} ${this.centerY}`);
+            path.setAttribute('class', 'ecg-wave');
+            path.setAttribute('stroke-width', '1');
+            this.svg.appendChild(path);
+            this.currentX += 2;
+        }
+
+        if (this.currentX > this.width) {
+            this.currentX = 20;
+            this.lastQRSTime = 0;
+            // 既存の波形をクリア
+            const paths = this.svg.querySelectorAll('path:not([d*="grid"])');
+            paths.forEach(path => path.remove());
+        }
+
+        this.animationId = requestAnimationFrame(() => this.animate());
+    }
+
+    start() {
+        this.isRunning = true;
+        this.animate();
+    }
+
+    stop() {
+        this.isRunning = false;
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+        }
+    }
+}
+
+// アニメーションの初期化
+document.addEventListener('DOMContentLoaded', function() {
+    // 心房細動アニメーション
+    const afSvgs = document.querySelectorAll('svg[viewBox*="500 100"]');
+    afSvgs.forEach((svg, index) => {
+        if (svg.closest('#chapter4')) {
+            const animator = new AtrialFibrillationAnimator(svg);
+            
+            // インターセクションオブザーバーでアニメーション制御
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        animator.start();
+                    } else {
+                        animator.stop();
+                    }
+                });
+            });
+            
+            observer.observe(svg);
+        }
+    });
+
+    // 心室頻拍アニメーション
+    const vtSvgs = document.querySelectorAll('svg[viewBox*="500 100"]');
+    vtSvgs.forEach((svg) => {
+        if (svg.closest('#chapter4') && svg.parentElement.parentElement.querySelector('h4')?.textContent.includes('VTの心電図所見')) {
+            const animator = new VentricularTachycardiaAnimator(svg);
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        animator.start();
+                    } else {
+                        animator.stop();
+                    }
+                });
+            });
+            
+            observer.observe(svg);
+        }
+    });
+});
