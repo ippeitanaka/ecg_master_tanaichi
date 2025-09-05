@@ -58,99 +58,15 @@
             margin: 2rem 0;
         }
         
-        /* 目次の開閉機能 */
         .chapter-nav {
-            position: fixed;
+            position: sticky;
             top: 20px;
-            right: 20px;
             background: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-            transition: all 0.3s ease;
-            max-width: 300px;
-        }
-
-        .nav-header {
-            padding: 12px 16px;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 10px 10px 0 0;
-            user-select: none;
-        }
-
-        .nav-header:hover {
-            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
-        }
-
-        .nav-toggle-icon {
-            transition: transform 0.3s ease;
-            font-size: 14px;
-        }
-
-        .nav-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease;
-            background: white;
-            border-radius: 0 0 10px 10px;
-        }
-
-        .nav-content.open {
-            max-height: 500px;
-            padding: 16px;
-        }
-
-        .nav-content .space-y-1 {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .nav-item {
-            padding: 8px 12px;
-            border-radius: 6px;
-            color: #4a5568;
-            text-decoration: none;
-            font-size: 14px;
-            transition: all 0.2s ease;
-            display: block;
-        }
-
-        .nav-item:hover {
-            background: #e2e8f0;
-            color: #2d3748;
-            transform: translateX(4px);
-        }
-
-        /* モバイル対応 */
-        @media (max-width: 768px) {
-            .chapter-nav {
-                top: 10px;
-                right: 10px;
-                left: 10px;
-                max-width: none;
-            }
-        }
-
-        /* コンパクト表示モード */
-        .nav-compact .nav-header {
-            padding: 8px 12px;
-            font-size: 14px;
-        }
-
-        .nav-compact .nav-content.open {
-            max-height: 300px;
-            padding: 12px;
-        }
-
-        .nav-compact .nav-item {
-            padding: 6px 10px;
-            font-size: 13px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 1rem;
+            margin-bottom: 2rem;
+            z-index: 100;
         }
         
         .nav-item {
@@ -196,59 +112,25 @@
     
     <!-- ナビゲーション -->
     <div class="chapter-nav">
-        <div class="nav-header">
-            <span>
-                <i class="fas fa-list mr-2"></i>
-                目次
-            </span>
-            <span class="nav-toggle-icon">▼</span>
-        </div>
-        <div class="nav-content">
-            <div class="space-y-1">
-                <a href="#chapter1" class="nav-item group hover:text-red-500 transition-colors duration-300">
-                    <i class="fas fa-book mr-2 group-hover:scale-110 transition-transform duration-300"></i>
-                    第1章：心電図の基礎知識
-                </a>
-                <a href="#chapter2" class="nav-item group hover:text-red-500 transition-colors duration-300">
-                    <i class="fas fa-chart-line mr-2 group-hover:scale-110 transition-transform duration-300"></i>
-                    第2章：正常心電図の読み方
-                </a>
-                <a href="#chapter3" class="nav-item group hover:text-red-500 transition-colors duration-300">
-                    <i class="fas fa-heartbeat mr-2 group-hover:scale-110 transition-transform duration-300"></i>
-                    第3章：期外収縮
-                </a>
-                <a href="#chapter4" class="nav-item group hover:text-red-500 transition-colors duration-300">
-                    <i class="fas fa-tachometer-alt mr-2 group-hover:scale-110 transition-transform duration-300"></i>
-                    第4章：頻脈性不整脈
-                </a>
-                <a href="#chapter5" class="nav-item group hover:text-red-500 transition-colors duration-300">
-                    <i class="fas fa-hourglass-half mr-2 group-hover:scale-110 transition-transform duration-300"></i>
-                    第5章：徐脈性不整脈
-                </a>
-                <a href="#chapter6" class="nav-item group hover:text-red-500 transition-colors duration-300">
-                    <i class="fas fa-road mr-2 group-hover:scale-110 transition-transform duration-300"></i>
-                    第6章：伝導障害
-                </a>
-                <a href="#chapter7" class="nav-item group hover:text-red-500 transition-colors duration-300">
-                    <i class="fas fa-heart mr-2 group-hover:scale-110 transition-transform duration-300"></i>
-                    第7章：虚血性心疾患
-                </a>
-                <a href="#chapter8" class="nav-item group hover:text-red-500 transition-colors duration-300">
-                    <i class="fas fa-star mr-2 group-hover:scale-110 transition-transform duration-300"></i>
-                    第8章：特殊な症候群
-                </a>
-                <a href="#chapter9" class="nav-item group hover:text-red-500 transition-colors duration-300">
-                    <i class="fas fa-flask mr-2 group-hover:scale-110 transition-transform duration-300"></i>
-                    第9章：電解質異常
-                </a>
-                <a href="#chapter10" class="nav-item group hover:text-red-500 transition-colors duration-300">
-                    <i class="fas fa-graduation-cap mr-2 group-hover:scale-110 transition-transform duration-300"></i>
-                    第10章：実践問題
-                </a>
-            </div>
+        <h3 class="font-bold text-lg mb-3 text-gray-800">
+            <i class="fas fa-list mr-2"></i>
+            目次
+        </h3>
+        <div class="space-y-1">
+            <a href="#chapter1" class="nav-item">第1章：心電図の基礎知識</a>
+            <a href="#chapter2" class="nav-item">第2章：正常心電図の読み方</a>
+            <a href="#chapter3" class="nav-item">第3章：期外収縮</a>
+            <a href="#chapter4" class="nav-item">第4章：頻脈性不整脈</a>
+            <a href="#chapter5" class="nav-item">第5章：徐脈性不整脈</a>
+            <a href="#chapter6" class="nav-item">第6章：伝導障害</a>
+            <a href="#chapter7" class="nav-item">第7章：虚血性心疾患</a>
+            <a href="#chapter8" class="nav-item">第8章：特殊な症候群</a>
+            <a href="#chapter9" class="nav-item">第9章：電解質異常</a>
+            <a href="#chapter10" class="nav-item">第10章：実践問題</a>
         </div>
     </div>
-        <!-- ヘッダー -->
+
+    <!-- ヘッダー -->
     <header class="gradient-bg text-white py-12">
         <div class="container mx-auto px-4">
             <div class="text-center">
@@ -680,69 +562,5 @@
             });
         });
     </script>
-<script>
-// 目次の開閉機能
-document.addEventListener('DOMContentLoaded', function() {
-    const navHeader = document.querySelector('.nav-header');
-    const navContent = document.querySelector('.nav-content');
-    const toggleIcon = document.querySelector('.nav-toggle-icon');
-    let isOpen = false;
-
-    // 開閉機能
-    function toggleNav() {
-        isOpen = !isOpen;
-        
-        if (isOpen) {
-            navContent.classList.add('open');
-            toggleIcon.style.transform = 'rotate(180deg)';
-            toggleIcon.textContent = '▲';
-        } else {
-            navContent.classList.remove('open');
-            toggleIcon.style.transform = 'rotate(0deg)';
-            toggleIcon.textContent = '▼';
-        }
-        
-        // 状態をローカルストレージに保存
-        localStorage.setItem('navOpen', isOpen);
-    }
-
-    // クリックイベント
-    navHeader.addEventListener('click', toggleNav);
-
-    // 保存された状態を復元
-    const savedState = localStorage.getItem('navOpen');
-    if (savedState === 'true') {
-        toggleNav();
-    }
-
-    // スクロール時のコンパクト表示
-    let lastScrollTop = 0;
-    const nav = document.querySelector('.chapter-nav');
-    
-    window.addEventListener('scroll', function() {
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        
-        if (scrollTop > 200) {
-            nav.classList.add('nav-compact');
-        } else {
-            nav.classList.remove('nav-compact');
-        }
-        
-        lastScrollTop = scrollTop;
-    });
-
-    // ナビゲーションアイテムクリック時の自動閉じ機能（モバイル用）
-    const navItems = document.querySelectorAll('.nav-item');
-    navItems.forEach(item => {
-        item.addEventListener('click', function() {
-            if (window.innerWidth <= 768 && isOpen) {
-                setTimeout(() => {
-                    toggleNav();
-                }, 300);
-            }
-        });
-    });
-});
-</script>
 </body>
 </html>
