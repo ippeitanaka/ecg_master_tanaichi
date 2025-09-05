@@ -7,7 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
+    <link rel="stylesheet" href="enhanced_ecg.css">    <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;600;700&display=swap');
         
         body {
@@ -816,69 +816,28 @@
 
     <!-- JavaScriptで動的効果 -->
     <script>
-        // ページロード時のフェードイン効果
-        window.addEventListener('load', function() {
-            const elements = document.querySelectorAll('.fade-in');
+        // ECGアニメーター初期化
+        let ecgAnimator;
+        
+        // ページロード後にアニメーション開始
+        window.addEventListener("load", function() {
+            // 既存のフェードイン効果
+            const elements = document.querySelectorAll(".fade-in");
             elements.forEach((el, index) => {
                 setTimeout(() => {
-                    el.style.opacity = '1';
-                    el.style.transform = 'translateY(0)';
+                    el.style.opacity = "1";
+                    el.style.transform = "translateY(0)";
                 }, index * 200);
             });
-        });
 
-        // スムーズスクロール
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            });
-        });
-
-        // 心電図波形のアニメーション効果（簡易版）
-        function animateECG() {
-            const waves = document.querySelectorAll('.ecg-wave, .ecg-wave-abnormal');
-            waves.forEach(wave => {
-                const length = wave.getTotalLength();
-                wave.style.strokeDasharray = length;
-                wave.style.strokeDashoffset = length;
-                wave.style.animation = 'dash 3s ease-in-out infinite';
-            });
-        }
-
-        // CSSアニメーションを追加
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes dash {
-                0% {
-                    stroke-dashoffset: 100%;
-                }
-                100% {
-                    stroke-dashoffset: 0;
-                }
-            }
-        `;
-        document.head.appendChild(style);
-
-        // ページロード後にアニメーション開始
-        setTimeout(animateECG, 1000);
-    </script>
-</body>
+            // 高品質心電図アニメーションを初期化
+            setTimeout(() => {
+                ecgAnimator = new ECGAnimator();
+                setTimeout(() => {
+                    ecgAnimator.animateStaticWaves();
+                }, 1000);
+            }, 2000);
+        });    </script>
+    <script src="enhanced_ecg.js"></script></body>
 </html>
-    <script id="html_badge_script1">
-        window.__genspark_remove_badge_link = "https://www.genspark.ai/api/html_badge/" +
-            "remove_badge?token=To%2FBnjzloZ3UfQdcSaYfDuf7FJCvHRHDOed100XBw7saVvwbabISJzGaAJHA23okbfnBzqNjKA18oUrXuIzEWR0v%2FNWO4bmUVd8DbshXf5AqODpRQxaOlYZvD1Ui%2BL0A8h4FhC0MHrnIcWFCvBySclBaT0hXXDabCzw3gIi5itoArnv399vZVIWaNFuY%2FMhNE58KqbvKxtwFM1bxnhNfg79SNQJBZ0S6ZXKyhrpfS%2BKDEKGk2zIPqgfNiQZ6TX3cA5NTz3KqZY3pWsxc30N1aW%2BQ5I1yUZbxATuqow5fp8cH%2BmqkuMcWwoqWmx8yAxQUH8pcqx6VloiLzoS%2BJO1FfzJYfOUugO0xmbzfN6opMov27qSSrMr0CRrEPF3vxjXVR1F8fT%2F89GEpiIFSnAMGINvA2HE7yKBwye0eTwpJdfTXMBIxBGHgogSpDTkw3qyAU0w1TDeCCxJs%2Fk1ghmO3RK6luoTWIZzi5PMgfXS%2FmdgPNRcYWt0aQrNi2QZVq2xpPyAVJg5%2BkkHqEflHa8asGA%3D%3D";
-        window.__genspark_locale = "ja-JP";
-        window.__genspark_token = "To/BnjzloZ3UfQdcSaYfDuf7FJCvHRHDOed100XBw7saVvwbabISJzGaAJHA23okbfnBzqNjKA18oUrXuIzEWR0v/NWO4bmUVd8DbshXf5AqODpRQxaOlYZvD1Ui+L0A8h4FhC0MHrnIcWFCvBySclBaT0hXXDabCzw3gIi5itoArnv399vZVIWaNFuY/MhNE58KqbvKxtwFM1bxnhNfg79SNQJBZ0S6ZXKyhrpfS+KDEKGk2zIPqgfNiQZ6TX3cA5NTz3KqZY3pWsxc30N1aW+Q5I1yUZbxATuqow5fp8cH+mqkuMcWwoqWmx8yAxQUH8pcqx6VloiLzoS+JO1FfzJYfOUugO0xmbzfN6opMov27qSSrMr0CRrEPF3vxjXVR1F8fT/89GEpiIFSnAMGINvA2HE7yKBwye0eTwpJdfTXMBIxBGHgogSpDTkw3qyAU0w1TDeCCxJs/k1ghmO3RK6luoTWIZzi5PMgfXS/mdgPNRcYWt0aQrNi2QZVq2xpPyAVJg5+kkHqEflHa8asGA==";
-    </script>
-    
-        <script id="html_badge_script2" src="https://www.genspark.ai/html_badge.js"></script>
-        
-    <script id="html_notice_dialog_script" src="https://www.genspark.ai/notice_dialog.js"></script>
     
